@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  converter-api:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./outputs:/app/outputs
+    environment:
+      - PORT=3000
+      - UPLOAD_DIR=./uploads
+      - OUTPUT_DIR=./outputs
+      - MAX_FILE_SIZE_MB=100
+      - CLEANUP_INTERVAL_HOURS=24
+    restart: unless-stopped
+
