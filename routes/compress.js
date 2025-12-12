@@ -47,7 +47,12 @@ router.post('/', upload.single('file'), async (req, res, next) => {
 
     const inputPath = req.file.path;
     const outputDir = process.env.OUTPUT_DIR || './outputs';
-    const outputFileName = `compressed_${uuidv4()}.pdf`;
+    
+    // Preserve original filename with "compressed" prefix
+    const originalName = req.file.originalname || 'compressed_file';
+    const baseName = path.basename(originalName, path.extname(originalName));
+    const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const outputFileName = `compressed_${sanitizedBaseName}.pdf`;
     const outputPath = path.join(outputDir, outputFileName);
 
     const quality = parseInt(req.body.quality) || 50;

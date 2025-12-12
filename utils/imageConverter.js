@@ -7,6 +7,9 @@ const { promisify } = require('util');
 
 const execAsync = promisify(exec);
 
+// Check if we're on Linux and handle accordingly
+const isLinux = process.platform === 'linux';
+
 /**
  * Converts an image (JPG, PNG) to PDF
  * 
@@ -74,9 +77,14 @@ async function convertPdfToImages(inputPath, outputDir) {
     try {
       await execAsync(command);
     } catch (execError) {
-      // Fallback: Try with pdf2image or use alternative method
-      // For now, we'll use a simpler approach with pdf-lib
-      throw new Error('pdftoppm not available. PDF to image conversion requires poppler-utils to be installed on the server.');
+      // Check if poppler-utils is installed
+      try {
+        await execAsync('which pdftoppm');
+      } catch (whichError) {
+        throw new Error('PDF to image conversion requires poppler-utils to be installed on the server. Please install it using: apt-get install poppler-utils (Linux) or brew install poppler (Mac).');
+      }
+      // If pdftoppm exists but command failed, throw original error
+      throw new Error(`PDF to image conversion failed: ${execError.message}`);
     }
 
     // Find all generated image files
@@ -87,15 +95,12 @@ async function convertPdfToImages(inputPath, outputDir) {
       .sort(); // Sort to maintain page order
 
     if (imageFiles.length === 0) {
-      // Fallback: Return first page only using pdf-lib (basic conversion)
-      // This is a simplified fallback that extracts first page as image
-      throw new Error('PDF to image conversion requires poppler-utils. For now, only first page conversion is supported.');
+      throw new Error('No images were generated. PDF to image conversion requires poppler-utils.');
     }
 
     return imageFiles;
   } catch (error) {
-    // Return error with helpful message
-    throw new Error(`PDF to image conversion failed: ${error.message}. Note: This feature requires poppler-utils to be installed on the server.`);
+    throw new Error(`PDF to image conversion failed: ${error.message}`);
   }
 }
 

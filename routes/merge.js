@@ -55,7 +55,12 @@ router.post('/', upload.array('files', 10), async (req, res, next) => {
     }
 
     const outputDir = process.env.OUTPUT_DIR || './outputs';
-    const outputFileName = `merged_${uuidv4()}.pdf`;
+    
+    // Use first file's name with "merged" prefix
+    const firstFileName = req.files[0].originalname || 'merged_file';
+    const baseName = path.basename(firstFileName, path.extname(firstFileName));
+    const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const outputFileName = `merged_${sanitizedBaseName}.pdf`;
     const outputPath = path.join(outputDir, outputFileName);
 
     const inputPaths = req.files.map(file => file.path);

@@ -1,7 +1,7 @@
 {
-  "name": "document-converter-backend",
+  "name": "pdfound-backend",
   "version": "1.0.0",
-  "description": "Document converter backend service",
+  "description": "PDFound backend service - Document converter API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -25,7 +25,8 @@
   "keywords": [
     "pdf",
     "converter",
-    "document"
+    "document",
+    "pdfound"
   ],
   "author": "",
   "license": "MIT"

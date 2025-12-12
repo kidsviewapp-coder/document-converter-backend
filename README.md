@@ -1,4 +1,4 @@
-# Document Converter Backend
+# PDFound Backend
 
 A Node.js backend service for converting, merging, splitting, and compressing documents.
 

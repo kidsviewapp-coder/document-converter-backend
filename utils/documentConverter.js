@@ -18,28 +18,59 @@ async function convertDocument(inputPath, outputPath, fileType) {
     const outputDir = path.dirname(outputPath);
     await fs.ensureDir(outputDir);
 
+    // Check if LibreOffice is available
+    try {
+      await execAsync('which libreoffice');
+    } catch (whichError) {
+      throw new Error('LibreOffice is not installed. Document conversion requires LibreOffice to be installed on the server.');
+    }
+
     // LibreOffice command to convert to PDF
     // --headless: run without GUI
     // --convert-to pdf: convert to PDF format
     // --outdir: output directory
-    const command = `libreoffice --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
+    // --nodefault: don't start a document
+    const command = `libreoffice --headless --nodefault --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
 
-    await execAsync(command);
+    // Execute with timeout (60 seconds)
+    const timeout = 60000;
+    const execPromise = execAsync(command);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Conversion timeout after 60 seconds')), timeout)
+    );
+
+    await Promise.race([execPromise, timeoutPromise]);
 
     // LibreOffice creates output with same name but .pdf extension
     const inputFileName = path.basename(inputPath, path.extname(inputPath));
     const libreOfficeOutput = path.join(outputDir, `${inputFileName}.pdf`);
 
-    // If output path is different, rename it
-    if (libreOfficeOutput !== outputPath) {
-      if (await fs.pathExists(libreOfficeOutput)) {
+    // Wait a bit for file system to sync
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Always rename to the desired output path (even if paths match, ensure file exists)
+    if (await fs.pathExists(libreOfficeOutput)) {
+      // If output path is different, rename it
+      if (libreOfficeOutput !== outputPath) {
         await fs.move(libreOfficeOutput, outputPath, { overwrite: true });
+      }
+    } else {
+      // LibreOffice might have created file with different name, search for PDF files
+      const files = await fs.readdir(outputDir);
+      const pdfFiles = files.filter(f => f.endsWith('.pdf') && f.startsWith(inputFileName));
+      if (pdfFiles.length > 0) {
+        const foundFile = path.join(outputDir, pdfFiles[0]);
+        if (foundFile !== outputPath) {
+          await fs.move(foundFile, outputPath, { overwrite: true });
+        }
       }
     }
 
-    // Verify output file exists
+    // Verify output file exists at the desired path
     if (!(await fs.pathExists(outputPath))) {
-      throw new Error('Conversion failed: output file not created');
+      // List files in output directory for debugging
+      const files = await fs.readdir(outputDir);
+      throw new Error(`Conversion failed: output file not created at ${outputPath}. Files in output dir: ${files.join(', ')}`);
     }
 
     return outputPath;
