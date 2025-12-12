@@ -44,9 +44,9 @@ router.post('/', upload.single('file'), async (req, res, next) => {
 
     const { fromType, toType } = req.body;
 
-    if (!fromType || !toType) {
+    if (!toType) {
       await fs.remove(req.file.path);
-      return res.status(400).json({ error: 'fromType and toType are required' });
+      return res.status(400).json({ error: 'toType is required' });
     }
 
     const inputPath = req.file.path;
@@ -54,26 +54,50 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     const outputFileName = `${uuidv4()}.${toType}`;
     const outputPath = path.join(outputDir, outputFileName);
 
+    // Auto-detect file type from extension if not provided
+    // Use both originalname and the saved file path extension
+    const originalExt = path.extname(req.file.originalname).toLowerCase().replace('.', '');
+    const savedExt = path.extname(req.file.path).toLowerCase().replace('.', '');
+    const fileExtension = originalExt || savedExt;
+    
+    let detectedFromType = fromType;
+    
+    // If fromType not provided or doesn't match, use file extension
+    if (!detectedFromType || detectedFromType === 'unknown') {
+      detectedFromType = fileExtension;
+    }
+
+    // Normalize file extensions
+    if (detectedFromType === 'jpeg') detectedFromType = 'jpg';
+    if (fileExtension === 'jpeg') detectedFromType = 'jpg';
+    
+    // Log for debugging
+    console.log(`Conversion request: originalName=${req.file.originalname}, fromType=${fromType}, detectedFromType=${detectedFromType}, toType=${toType}`);
+
     let resultPath;
 
-    // Document to PDF conversions
-    if (['docx', 'xlsx', 'pptx'].includes(fromType) && toType === 'pdf') {
-      resultPath = await convertDocument(inputPath, outputPath, fromType);
+    // Document to PDF conversions (docx, xlsx, pptx -> pdf)
+    if (['docx', 'xlsx', 'pptx'].includes(detectedFromType.toLowerCase()) && toType.toLowerCase() === 'pdf') {
+      resultPath = await convertDocument(inputPath, outputPath, detectedFromType.toLowerCase());
     }
-    // Image to PDF conversions
-    else if (['jpg', 'jpeg', 'png'].includes(fromType.toLowerCase()) && toType === 'pdf') {
+    // Image to PDF conversions (jpg, jpeg, png -> pdf)
+    else if (['jpg', 'jpeg', 'png'].includes(detectedFromType.toLowerCase()) && toType.toLowerCase() === 'pdf') {
       resultPath = await convertImageToPdf(inputPath, outputPath);
     }
-    // PDF to JPG conversions
-    else if (fromType.toLowerCase() === 'pdf' && toType === 'jpg') {
+    // PDF to JPG conversions (pdf -> jpg)
+    else if (detectedFromType.toLowerCase() === 'pdf' && toType.toLowerCase() === 'jpg') {
       // For PDF to JPG, we'll return the first page as JPG
       const result = await convertPdfToImages(inputPath, outputDir);
-      resultPath = result[0]; // Return first page
+      if (result && result.length > 0) {
+        resultPath = result[0]; // Return first page
+      } else {
+        throw new Error('PDF to image conversion failed: No images were generated');
+      }
     }
     else {
       await fs.remove(inputPath);
       return res.status(400).json({ 
-        error: `Unsupported conversion: ${fromType} to ${toType}` 
+        error: `Unsupported conversion: ${detectedFromType} to ${toType}. Supported: docx/xlsx/pptx/jpg/png -> pdf, pdf -> jpg` 
       });
     }
 

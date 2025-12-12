@@ -18,17 +18,35 @@ async function convertDocument(inputPath, outputPath, fileType) {
     const outputDir = path.dirname(outputPath);
     await fs.ensureDir(outputDir);
 
+    // Check if LibreOffice is available
+    try {
+      await execAsync('which libreoffice');
+    } catch (whichError) {
+      throw new Error('LibreOffice is not installed. Document conversion requires LibreOffice to be installed on the server.');
+    }
+
     // LibreOffice command to convert to PDF
     // --headless: run without GUI
     // --convert-to pdf: convert to PDF format
     // --outdir: output directory
-    const command = `libreoffice --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
+    // --nodefault: don't start a document
+    const command = `libreoffice --headless --nodefault --convert-to pdf --outdir "${outputDir}" "${inputPath}"`;
 
-    await execAsync(command);
+    // Execute with timeout (60 seconds)
+    const timeout = 60000;
+    const execPromise = execAsync(command);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Conversion timeout after 60 seconds')), timeout)
+    );
+
+    await Promise.race([execPromise, timeoutPromise]);
 
     // LibreOffice creates output with same name but .pdf extension
     const inputFileName = path.basename(inputPath, path.extname(inputPath));
     const libreOfficeOutput = path.join(outputDir, `${inputFileName}.pdf`);
+
+    // Wait a bit for file system to sync
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // If output path is different, rename it
     if (libreOfficeOutput !== outputPath) {
@@ -39,7 +57,9 @@ async function convertDocument(inputPath, outputPath, fileType) {
 
     // Verify output file exists
     if (!(await fs.pathExists(outputPath))) {
-      throw new Error('Conversion failed: output file not created');
+      // List files in output directory for debugging
+      const files = await fs.readdir(outputDir);
+      throw new Error(`Conversion failed: output file not created. Files in output dir: ${files.join(', ')}`);
     }
 
     return outputPath;

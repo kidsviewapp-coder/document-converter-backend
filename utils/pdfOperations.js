@@ -84,21 +84,34 @@ async function splitPdf(inputPath, outputDir) {
  */
 async function compressPdf(inputPath, outputPath, quality = 50) {
   try {
-    // Map quality (1-100) to Ghostscript dPDFSETTINGS
-    // Higher quality = less compression, better quality
-    let gsQuality;
+    // Map quality (1-100) to Ghostscript compression settings
+    // Higher quality value = MORE compression = SMALLER file
+    // Lower quality value = LESS compression = LARGER file (better quality)
+    // Use more aggressive compression flags for higher quality values
+    
+    let gsSettings = '';
+    let imageResolution = '';
+    
     if (quality >= 80) {
-      gsQuality = '/prepress'; // High quality
+      // Maximum compression - smallest file
+      gsSettings = '/screen';
+      imageResolution = '-dDownsampleColorImages=true -dColorImageResolution=72 -dDownsampleGrayImages=true -dGrayImageResolution=72 -dDownsampleMonoImages=true -dMonoImageResolution=72';
     } else if (quality >= 50) {
-      gsQuality = '/printer'; // Medium quality
+      // High compression
+      gsSettings = '/ebook';
+      imageResolution = '-dDownsampleColorImages=true -dColorImageResolution=150 -dDownsampleGrayImages=true -dGrayImageResolution=150';
     } else if (quality >= 30) {
-      gsQuality = '/ebook'; // Lower quality, smaller size
+      // Medium compression
+      gsSettings = '/printer';
+      imageResolution = '-dColorImageResolution=300 -dGrayImageResolution=300';
     } else {
-      gsQuality = '/screen'; // Lowest quality, smallest size
+      // Minimum compression - best quality, largest file
+      gsSettings = '/prepress';
+      imageResolution = ''; // No downsampling, keep original resolution
     }
 
-    // Ghostscript command to compress PDF
-    const command = `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${gsQuality} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`;
+    // Ghostscript command with additional compression flags
+    const command = `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${gsSettings} -dEmbedAllFonts=true -dSubsetFonts=true -dCompressFonts=true -dOptimize=true ${imageResolution} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`;
 
     await execAsync(command);
 

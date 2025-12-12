@@ -28,7 +28,7 @@ Once you have your repository:
    - Connect your GitHub account (if not connected)
    - Select your repository: `document-converter-backend`
 
-3. **Configure Service (Node.js)**
+3. **Configure Service (Docker - REQUIRED for LibreOffice)**
    - **Name:** `document-converter` (or any name)
    - **Region:** Choose closest to you
    - **Branch:** `main`
@@ -36,9 +36,11 @@ Once you have your repository:
      - **If your GitHub repo has files at root:** Leave **EMPTY** (blank)
      - **If your GitHub repo has files in `backend/` folder:** Set to `backend`
      - ⚠️ **Check your GitHub repo structure first!**
-   - **Environment:** Select **`Node`** (NOT Docker)
-   - **Build Command:** `npm install`
-   - **Start Command:** `node server.js`
+   - **Environment:** Select **`Docker`** ⚠️ IMPORTANT! (NOT Node)
+     - Docker is required because LibreOffice needs to be installed
+     - The Dockerfile already includes LibreOffice installation
+   - **Build Command:** (Leave empty - Docker handles this)
+   - **Start Command:** (Leave empty - Docker handles this)
 
 4. **Advanced Settings (Important!)**
    - Click "Advanced" section to expand
@@ -95,8 +97,9 @@ Once you have your repository:
   - 750 hours/month free
   - Includes system dependencies (LibreOffice, etc.)
 
-- Render automatically installs system packages
-- Better for apps that need LibreOffice/Ghostscript
+- **IMPORTANT:** You MUST use Docker environment (not Node.js) to install LibreOffice
+- The Dockerfile includes all required system packages (LibreOffice, Ghostscript, poppler-utils)
+- Node.js environment on Render does NOT automatically install LibreOffice
 
 ## Troubleshooting
 

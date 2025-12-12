@@ -17,7 +17,10 @@
     "uuid": "^9.0.1",
     "fs-extra": "^11.1.1",
     "node-cron": "^3.0.3",
-    "archiver": "^6.0.1"
+    "archiver": "^6.0.1",
+    "tesseract.js": "^5.0.4",
+    "pdf2pic": "^3.1.1",
+    "canvas": "^2.11.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

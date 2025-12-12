@@ -34,11 +34,17 @@ const convertRoutes = require('./routes/convert');
 const mergeRoutes = require('./routes/merge');
 const splitRoutes = require('./routes/split');
 const compressRoutes = require('./routes/compress');
+const ocrRoutes = require('./routes/ocr');
+const watermarkRoutes = require('./routes/watermark');
+const pdfRoutes = require('./routes/pdf');
 
 app.use('/convert', convertRoutes);
 app.use('/merge', mergeRoutes);
 app.use('/split', splitRoutes);
 app.use('/compress', compressRoutes);
+app.use('/ocr', ocrRoutes);
+app.use('/watermark', watermarkRoutes);
+app.use('/pdf', pdfRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

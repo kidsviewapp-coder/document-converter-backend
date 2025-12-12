@@ -1,12 +1,14 @@
 FROM node:18-slim
 
-# Install system dependencies for LibreOffice, Ghostscript, and image processing
+# Install system dependencies for LibreOffice, Ghostscript, image processing, and OCR
 RUN apt-get update && apt-get install -y \
     libreoffice \
     ghostscript \
     imagemagick \
     graphicsmagick \
     poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
