@@ -65,14 +65,14 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     // If baseName is empty or just underscores, use a default name
     const finalBaseName = sanitizedBaseName.trim() || 'converted_file';
     
-    // Use same base name with new extension
-    let outputFileName = `${finalBaseName}.${toType}`;
+    // Use same base name with app name and new extension
+    let outputFileName = `${finalBaseName}_PDFound.${toType}`;
     let outputPath = path.join(outputDir, outputFileName);
     
     // Handle filename conflicts - if file exists, add a number suffix
     let counter = 1;
     while (await fs.pathExists(outputPath)) {
-      outputFileName = `${finalBaseName}_${counter}.${toType}`;
+      outputFileName = `${finalBaseName}_PDFound_${counter}.${toType}`;
       outputPath = path.join(outputDir, outputFileName);
       counter++;
     }

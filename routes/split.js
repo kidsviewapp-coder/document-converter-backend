@@ -56,11 +56,11 @@ router.post('/', upload.single('file'), async (req, res, next) => {
     // Split PDF into pages
     const pageFiles = await splitPdf(inputPath, tempDir);
 
-    // Create ZIP file with original filename
+    // Create ZIP file with original filename and app name
     const originalName = req.file.originalname || 'split_file';
     const baseName = path.basename(originalName, path.extname(originalName));
     const sanitizedBaseName = baseName.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const zipFileName = `${sanitizedBaseName}_split.zip`;
+    const zipFileName = `${sanitizedBaseName}_split_PDFound.zip`;
     const zipPath = path.join(outputDir, zipFileName);
 
     await new Promise((resolve, reject) => {
