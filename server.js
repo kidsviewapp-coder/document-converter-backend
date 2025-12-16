@@ -8,9 +8,7 @@ const multer = require('multer');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs').promises;
-const { exec } = require('child_process');
-const { promisify } = require('util');
-const execAsync = promisify(exec);
+const { removeBackground } = require('@imgly/background-removal');
 const sharp = require('sharp');
 
 const app = express();
@@ -91,20 +89,22 @@ app.post('/remove-background', upload.single('file'), async (req, res) => {
         const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
 
         try {
-            // Use rembg (Python) for accurate background removal
-            // Make sure rembg is installed: pip install rembg
-            try {
-                // Try using rembg
-                await execAsync(`rembg i "${inputPath}" "${outputPath}"`);
-            } catch (rembgError) {
-                // If rembg is not available, fall back to sharp (basic conversion)
-                // This won't actually remove background, just convert format
-                console.warn('rembg not found, using fallback. Install rembg for better results: pip install rembg');
-                const imageBuffer = await fs.readFile(inputPath);
-                await sharp(imageBuffer)
-                    .png()
-                    .toFile(outputPath);
-            }
+            // Use @imgly/background-removal for background removal
+            // This is a Node.js library that works without Python
+            const imageBuffer = await fs.readFile(inputPath);
+            
+            // Create a Blob from the image buffer (Node.js 18+ supports Blob)
+            const mimeType = fileExt === '.jpg' || fileExt === '.jpeg' ? 'image/jpeg' : 
+                           fileExt === '.png' ? 'image/png' : 'image/webp';
+            const blob = new Blob([imageBuffer], { type: mimeType });
+            
+            // Remove background using @imgly/background-removal
+            const blobResult = await removeBackground(blob);
+            const arrayBuffer = await blobResult.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            
+            // Save the result as PNG
+            await fs.writeFile(outputPath, buffer);
 
             // Clean up input file
             await fs.unlink(inputPath);
@@ -160,19 +160,17 @@ app.post('/convert', upload.single('file'), async (req, res) => {
             });
         }
 
-        const fromType = req.body.fromType || 'jpg';
-        const toType = req.body.toType || 'png';
+        const fromType = (req.body.fromType || 'jpg').toLowerCase();
+        const toType = (req.body.toType || 'png').toLowerCase();
         const fileName = req.body.fileName || req.file.originalname;
+        const inputPath = req.file.path;
 
         // For JPG to PNG conversion
-        if (fromType.toLowerCase() === 'jpg' && toType.toLowerCase() === 'png') {
-            const inputPath = req.file.path;
+        if (fromType === 'jpg' && toType === 'png') {
             const outputFileName = fileName.replace(/\.(jpg|jpeg)$/i, '.png');
             const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
 
             try {
-                // Read and convert using sharp (if available) or simple copy
-                const sharp = require('sharp');
                 await sharp(inputPath)
                     .png()
                     .toFile(outputPath);
@@ -190,10 +188,12 @@ app.post('/convert', upload.single('file'), async (req, res) => {
                 throw conversionError;
             }
         } else {
-            // For other conversions, you would add your existing conversion logic here
-            res.status(400).json({
-                error: 'Conversion not supported',
-                message: `Conversion from ${fromType} to ${toType} is not yet implemented`
+            // For other conversions (Word to PDF, Image to PDF, PDF to JPG, etc.)
+            // Add your existing conversion logic here
+            // This is a placeholder - replace with your actual conversion code
+            res.status(501).json({
+                error: 'Conversion not implemented',
+                message: `Conversion from ${fromType} to ${toType} - add your conversion logic here`
             });
         }
 
@@ -213,6 +213,126 @@ app.post('/convert', upload.single('file'), async (req, res) => {
         res.status(500).json({
             error: 'Conversion failed',
             message: error.message || 'An error occurred during conversion'
+        });
+    }
+});
+
+/**
+ * Convert Images Endpoint (multiple images)
+ * POST /convert/images
+ */
+app.post('/convert/images', upload.array('files'), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                error: 'No files uploaded',
+                message: 'Please upload image files'
+            });
+        }
+
+        const toType = (req.body.toType || 'pdf').toLowerCase();
+        
+        // Add your image to PDF conversion logic here
+        // This is a placeholder - replace with your actual conversion code
+        res.status(501).json({
+            error: 'Not implemented',
+            message: 'Image to PDF conversion - add your conversion logic here'
+        });
+
+    } catch (error) {
+        console.error('Convert images error:', error);
+        res.status(500).json({
+            error: 'Conversion failed',
+            message: error.message || 'An error occurred during conversion'
+        });
+    }
+});
+
+/**
+ * Merge PDFs Endpoint
+ * POST /merge
+ */
+app.post('/merge', upload.array('files'), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                error: 'No files uploaded',
+                message: 'Please upload PDF files to merge'
+            });
+        }
+
+        // Add your PDF merge logic here
+        // This is a placeholder - replace with your actual merge code
+        res.status(501).json({
+            error: 'Not implemented',
+            message: 'PDF merge - add your merge logic here'
+        });
+
+    } catch (error) {
+        console.error('Merge error:', error);
+        res.status(500).json({
+            error: 'Merge failed',
+            message: error.message || 'An error occurred during merge'
+        });
+    }
+});
+
+/**
+ * Split PDF Endpoint
+ * POST /split
+ */
+app.post('/split', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                error: 'No file uploaded',
+                message: 'Please upload a PDF file to split'
+            });
+        }
+
+        // Add your PDF split logic here
+        // This is a placeholder - replace with your actual split code
+        res.status(501).json({
+            error: 'Not implemented',
+            message: 'PDF split - add your split logic here'
+        });
+
+    } catch (error) {
+        console.error('Split error:', error);
+        res.status(500).json({
+            error: 'Split failed',
+            message: error.message || 'An error occurred during split'
+        });
+    }
+});
+
+/**
+ * Compress PDF Endpoint
+ * POST /compress
+ */
+app.post('/compress', upload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                error: 'No file uploaded',
+                message: 'Please upload a PDF file to compress'
+            });
+        }
+
+        const quality = parseInt(req.body.quality) || 50;
+
+        // Add your PDF compression logic here
+        // This is a placeholder - replace with your actual compression code
+        res.status(501).json({
+            error: 'Not implemented',
+            message: 'PDF compression - add your compression logic here'
+        });
+
+    } catch (error) {
+        console.error('Compress error:', error);
+        res.status(500).json({
+            error: 'Compression failed',
+            message: error.message || 'An error occurred during compression'
         });
     }
 });
