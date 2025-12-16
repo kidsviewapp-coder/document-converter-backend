@@ -8,7 +8,23 @@ const multer = require('multer');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const sharp = require('sharp');
+const os = require('os');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const { PDFDocument } = require('pdf-lib');
+const archiver = require('archiver');
+const execAsync = promisify(exec);
+
+// Polyfill for navigator (required by @imgly/background-removal in Node.js)
+if (typeof global.navigator === 'undefined') {
+    global.navigator = {
+        hardwareConcurrency: os.cpus().length || 4,
+        platform: process.platform,
+        userAgent: 'Node.js'
+    };
+}
 
 // Try to load background removal library (optional - won't crash if not available)
 let removeBackground = null;
@@ -100,20 +116,29 @@ app.post('/remove-background', upload.single('file'), async (req, res) => {
         try {
             // Use @imgly/background-removal for background removal if available
             if (removeBackground) {
-                const imageBuffer = await fs.readFile(inputPath);
-                
-                // Create a Blob from the image buffer (Node.js 18+ supports Blob)
-                const mimeType = fileExt === '.jpg' || fileExt === '.jpeg' ? 'image/jpeg' : 
-                               fileExt === '.png' ? 'image/png' : 'image/webp';
-                const blob = new Blob([imageBuffer], { type: mimeType });
-                
-                // Remove background using @imgly/background-removal
-                const blobResult = await removeBackground(blob);
-                const arrayBuffer = await blobResult.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
-                
-                // Save the result as PNG
-                await fs.writeFile(outputPath, buffer);
+                try {
+                    const imageBuffer = await fs.readFile(inputPath);
+                    
+                    // Create a Blob from the image buffer (Node.js 18+ supports Blob)
+                    const mimeType = fileExt === '.jpg' || fileExt === '.jpeg' ? 'image/jpeg' : 
+                                   fileExt === '.png' ? 'image/png' : 'image/webp';
+                    const blob = new Blob([imageBuffer], { type: mimeType });
+                    
+                    // Remove background using @imgly/background-removal
+                    const blobResult = await removeBackground(blob);
+                    const arrayBuffer = await blobResult.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+                    
+                    // Save the result as PNG
+                    await fs.writeFile(outputPath, buffer);
+                } catch (bgRemovalError) {
+                    // If background removal fails (e.g., navigator issues), fall back to format conversion
+                    console.warn('Background removal failed, using format conversion fallback:', bgRemovalError.message);
+                    const imageBuffer = await fs.readFile(inputPath);
+                    await sharp(imageBuffer)
+                        .png()
+                        .toFile(outputPath);
+                }
             } else {
                 // Fallback: Use sharp to convert to PNG (won't remove background, just converts format)
                 console.warn('Background removal library not available, using format conversion fallback');
@@ -182,37 +207,117 @@ app.post('/convert', upload.single('file'), async (req, res) => {
         const fileName = req.body.fileName || req.file.originalname;
         const inputPath = req.file.path;
 
-        // For JPG to PNG conversion
-        if (fromType === 'jpg' && toType === 'png') {
-            const outputFileName = fileName.replace(/\.(jpg|jpeg)$/i, '.png');
-            const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
+        // Determine output filename
+        const baseName = path.basename(fileName, path.extname(fileName));
+        let outputFileName;
+        let outputPath;
 
-            try {
-                await sharp(inputPath)
-                    .png()
-                    .toFile(outputPath);
-
-                await fs.unlink(inputPath);
-
-                res.json({
-                    success: true,
-                    downloadUrl: `/downloads/${outputFileName}`,
-                    fileName: outputFileName,
-                    message: 'Conversion successful'
-                });
-            } catch (conversionError) {
-                await fs.unlink(inputPath);
-                throw conversionError;
+        // JPG/JPEG to PNG
+        if ((fromType === 'jpg' || fromType === 'jpeg') && toType === 'png') {
+            outputFileName = `${baseName}.png`;
+            outputPath = path.join(DOWNLOAD_DIR, outputFileName);
+            
+            await sharp(inputPath)
+                .png()
+                .toFile(outputPath);
+        }
+        // Word documents (docx, doc) to PDF
+        else if ((fromType === 'docx' || fromType === 'doc') && toType === 'pdf') {
+            outputFileName = `${baseName}.pdf`;
+            outputPath = path.join(DOWNLOAD_DIR, outputFileName);
+            
+            // Use LibreOffice to convert Word to PDF
+            await execAsync(`libreoffice --headless --convert-to pdf --outdir "${DOWNLOAD_DIR}" "${inputPath}"`);
+            
+            // LibreOffice creates file with same name but .pdf extension
+            const libreOfficeOutput = path.join(DOWNLOAD_DIR, path.basename(inputPath, path.extname(inputPath)) + '.pdf');
+            if (await fs.access(libreOfficeOutput).then(() => true).catch(() => false)) {
+                // Rename to desired output filename
+                await fs.rename(libreOfficeOutput, outputPath);
+            } else {
+                throw new Error('LibreOffice conversion failed');
             }
-        } else {
-            // For other conversions (Word to PDF, Image to PDF, PDF to JPG, etc.)
-            // Add your existing conversion logic here
-            // This is a placeholder - replace with your actual conversion code
-            res.status(501).json({
-                error: 'Conversion not implemented',
-                message: `Conversion from ${fromType} to ${toType} - add your conversion logic here`
+        }
+        // Images (jpg, png, webp) to PDF
+        else if ((fromType === 'jpg' || fromType === 'jpeg' || fromType === 'png' || fromType === 'webp') && toType === 'pdf') {
+            outputFileName = `${baseName}.pdf`;
+            outputPath = path.join(DOWNLOAD_DIR, outputFileName);
+            
+            // Use sharp to convert image to PDF
+            const image = sharp(inputPath);
+            const metadata = await image.metadata();
+            const pdfDoc = await PDFDocument.create();
+            const imageBuffer = await fs.readFile(inputPath);
+            
+            let pdfImage;
+            if (fromType === 'png') {
+                pdfImage = await pdfDoc.embedPng(imageBuffer);
+            } else {
+                pdfImage = await pdfDoc.embedJpg(imageBuffer);
+            }
+            
+            const page = pdfDoc.addPage([metadata.width || 612, metadata.height || 792]);
+            page.drawImage(pdfImage, {
+                x: 0,
+                y: 0,
+                width: metadata.width || 612,
+                height: metadata.height || 792,
+            });
+            
+            const pdfBytes = await pdfDoc.save();
+            await fs.writeFile(outputPath, pdfBytes);
+        }
+        // PDF to JPG/JPEG
+        else if (fromType === 'pdf' && (toType === 'jpg' || toType === 'jpeg')) {
+            outputFileName = `${baseName}.jpg`;
+            outputPath = path.join(DOWNLOAD_DIR, outputFileName);
+            
+            // Use pdf2pic or poppler-utils (pdftoppm) to convert PDF to image
+            try {
+                // Try using pdftoppm (poppler-utils) - installed in Docker
+                await execAsync(`pdftoppm -jpeg -singlefile -r 300 "${inputPath}" "${path.join(DOWNLOAD_DIR, baseName)}"`);
+                const jpegOutput = path.join(DOWNLOAD_DIR, `${baseName}.jpg`);
+                if (await fs.access(jpegOutput).then(() => true).catch(() => false)) {
+                    await fs.rename(jpegOutput, outputPath);
+                } else {
+                    throw new Error('PDF to JPG conversion failed');
+                }
+            } catch (error) {
+                // Fallback: try using pdf2pic if available
+                const pdf2pic = require('pdf2pic');
+                const convert = pdf2pic.fromPath(inputPath, {
+                    density: 300,
+                    saveFilename: baseName,
+                    savePath: DOWNLOAD_DIR,
+                    format: 'jpg'
+                });
+                const result = await convert(1);
+                if (result.path) {
+                    await fs.rename(result.path, outputPath);
+                } else {
+                    throw new Error('PDF to JPG conversion failed');
+                }
+            }
+        }
+        // Unsupported conversion
+        else {
+            await fs.unlink(inputPath);
+            return res.status(400).json({
+                error: 'Conversion not supported',
+                message: `Conversion from ${fromType} to ${toType} is not supported`
             });
         }
+
+        // Clean up input file
+        await fs.unlink(inputPath);
+
+        // Return success response
+        res.json({
+            success: true,
+            downloadUrl: `/downloads/${outputFileName}`,
+            fileName: outputFileName,
+            message: 'Conversion successful'
+        });
 
     } catch (error) {
         console.error('Conversion error:', error);
@@ -235,10 +340,11 @@ app.post('/convert', upload.single('file'), async (req, res) => {
 });
 
 /**
- * Convert Images Endpoint (multiple images)
+ * Convert Images Endpoint (multiple images to PDF)
  * POST /convert/images
  */
 app.post('/convert/images', upload.array('files'), async (req, res) => {
+    const uploadedFiles = [];
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({
@@ -249,15 +355,83 @@ app.post('/convert/images', upload.array('files'), async (req, res) => {
 
         const toType = (req.body.toType || 'pdf').toLowerCase();
         
-        // Add your image to PDF conversion logic here
-        // This is a placeholder - replace with your actual conversion code
-        res.status(501).json({
-            error: 'Not implemented',
-            message: 'Image to PDF conversion - add your conversion logic here'
+        if (toType !== 'pdf') {
+            // Clean up uploaded files
+            for (const file of req.files) {
+                try {
+                    await fs.unlink(file.path);
+                } catch (e) {}
+            }
+            return res.status(400).json({
+                error: 'Unsupported conversion',
+                message: 'Only PDF output is supported for multiple images'
+            });
+        }
+
+        // Create a new PDF document
+        const pdfDoc = await PDFDocument.create();
+        uploadedFiles.push(...req.files);
+
+        // Process each image
+        for (const file of req.files) {
+            try {
+                const imageBuffer = await fs.readFile(file.path);
+                const image = sharp(imageBuffer);
+                const metadata = await image.metadata();
+                
+                let pdfImage;
+                const ext = path.extname(file.originalname).toLowerCase();
+                if (ext === '.png') {
+                    pdfImage = await pdfDoc.embedPng(imageBuffer);
+                } else {
+                    pdfImage = await pdfDoc.embedJpg(imageBuffer);
+                }
+                
+                const page = pdfDoc.addPage([metadata.width || 612, metadata.height || 792]);
+                page.drawImage(pdfImage, {
+                    x: 0,
+                    y: 0,
+                    width: metadata.width || 612,
+                    height: metadata.height || 792,
+                });
+            } catch (imageError) {
+                console.error(`Error processing image ${file.originalname}:`, imageError);
+                // Continue with other images
+            }
+        }
+
+        // Generate output filename
+        const outputFileName = `images_${Date.now()}.pdf`;
+        const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
+        
+        // Save PDF
+        const pdfBytes = await pdfDoc.save();
+        await fs.writeFile(outputPath, pdfBytes);
+
+        // Clean up uploaded files
+        for (const file of req.files) {
+            try {
+                await fs.unlink(file.path);
+            } catch (e) {}
+        }
+
+        res.json({
+            success: true,
+            downloadUrl: `/downloads/${outputFileName}`,
+            fileName: outputFileName,
+            message: 'Conversion successful'
         });
 
     } catch (error) {
         console.error('Convert images error:', error);
+        
+        // Clean up uploaded files on error
+        for (const file of uploadedFiles) {
+            try {
+                await fs.unlink(file.path);
+            } catch (e) {}
+        }
+        
         res.status(500).json({
             error: 'Conversion failed',
             message: error.message || 'An error occurred during conversion'
@@ -270,6 +444,7 @@ app.post('/convert/images', upload.array('files'), async (req, res) => {
  * POST /merge
  */
 app.post('/merge', upload.array('files'), async (req, res) => {
+    const uploadedFiles = [];
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({
@@ -278,15 +453,55 @@ app.post('/merge', upload.array('files'), async (req, res) => {
             });
         }
 
-        // Add your PDF merge logic here
-        // This is a placeholder - replace with your actual merge code
-        res.status(501).json({
-            error: 'Not implemented',
-            message: 'PDF merge - add your merge logic here'
+        // Create a new PDF document
+        const mergedPdf = await PDFDocument.create();
+        uploadedFiles.push(...req.files);
+
+        // Merge all PDFs
+        for (const file of req.files) {
+            try {
+                const pdfBytes = await fs.readFile(file.path);
+                const pdf = await PDFDocument.load(pdfBytes);
+                const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                pages.forEach((page) => mergedPdf.addPage(page));
+            } catch (pdfError) {
+                console.error(`Error merging PDF ${file.originalname}:`, pdfError);
+                // Continue with other PDFs
+            }
+        }
+
+        // Generate output filename
+        const outputFileName = `merged_${Date.now()}.pdf`;
+        const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
+        
+        // Save merged PDF
+        const mergedPdfBytes = await mergedPdf.save();
+        await fs.writeFile(outputPath, mergedPdfBytes);
+
+        // Clean up uploaded files
+        for (const file of req.files) {
+            try {
+                await fs.unlink(file.path);
+            } catch (e) {}
+        }
+
+        res.json({
+            success: true,
+            downloadUrl: `/downloads/${outputFileName}`,
+            fileName: outputFileName,
+            message: 'Merge successful'
         });
 
     } catch (error) {
         console.error('Merge error:', error);
+        
+        // Clean up uploaded files on error
+        for (const file of uploadedFiles) {
+            try {
+                await fs.unlink(file.path);
+            } catch (e) {}
+        }
+        
         res.status(500).json({
             error: 'Merge failed',
             message: error.message || 'An error occurred during merge'
@@ -307,15 +522,54 @@ app.post('/split', upload.single('file'), async (req, res) => {
             });
         }
 
-        // Add your PDF split logic here
-        // This is a placeholder - replace with your actual split code
-        res.status(501).json({
-            error: 'Not implemented',
-            message: 'PDF split - add your split logic here'
+        const inputPath = req.file.path;
+        const pdfBytes = await fs.readFile(inputPath);
+        const pdf = await PDFDocument.load(pdfBytes);
+        const pageCount = pdf.getPageCount();
+
+        // Create a ZIP file containing all split PDFs
+        const outputFileName = `split_${Date.now()}.zip`;
+        const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
+        const output = fsSync.createWriteStream(outputPath);
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        await new Promise((resolve, reject) => {
+            output.on('close', resolve);
+            archive.on('error', reject);
+            archive.pipe(output);
+
+            // Split PDF into individual pages
+            (async () => {
+                for (let i = 0; i < pageCount; i++) {
+                    const singlePagePdf = await PDFDocument.create();
+                    const [page] = await singlePagePdf.copyPages(pdf, [i]);
+                    singlePagePdf.addPage(page);
+                    const pageBytes = await singlePagePdf.save();
+                    archive.append(Buffer.from(pageBytes), { name: `page_${i + 1}.pdf` });
+                }
+                archive.finalize();
+            })();
+        });
+
+        // Clean up input file
+        await fs.unlink(inputPath);
+
+        res.json({
+            success: true,
+            downloadUrl: `/downloads/${outputFileName}`,
+            fileName: outputFileName,
+            message: `PDF split into ${pageCount} pages successfully`
         });
 
     } catch (error) {
         console.error('Split error:', error);
+        
+        if (req.file?.path) {
+            try {
+                await fs.unlink(req.file.path);
+            } catch (e) {}
+        }
+        
         res.status(500).json({
             error: 'Split failed',
             message: error.message || 'An error occurred during split'
@@ -336,17 +590,47 @@ app.post('/compress', upload.single('file'), async (req, res) => {
             });
         }
 
+        const inputPath = req.file.path;
         const quality = parseInt(req.body.quality) || 50;
+        
+        // Use Ghostscript to compress PDF
+        const baseName = path.basename(req.file.originalname, path.extname(req.file.originalname));
+        const outputFileName = `${baseName}_compressed.pdf`;
+        const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
+        
+        // Ghostscript compression settings based on quality
+        // Lower quality = higher compression
+        let gsQuality = '/screen'; // 72 dpi
+        if (quality >= 75) {
+            gsQuality = '/prepress'; // 300 dpi
+        } else if (quality >= 50) {
+            gsQuality = '/ebook'; // 150 dpi
+        } else if (quality >= 25) {
+            gsQuality = '/printer'; // 300 dpi
+        }
 
-        // Add your PDF compression logic here
-        // This is a placeholder - replace with your actual compression code
-        res.status(501).json({
-            error: 'Not implemented',
-            message: 'PDF compression - add your compression logic here'
+        // Compress using Ghostscript
+        await execAsync(`gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${gsQuality} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`);
+
+        // Clean up input file
+        await fs.unlink(inputPath);
+
+        res.json({
+            success: true,
+            downloadUrl: `/downloads/${outputFileName}`,
+            fileName: outputFileName,
+            message: 'Compression successful'
         });
 
     } catch (error) {
         console.error('Compress error:', error);
+        
+        if (req.file?.path) {
+            try {
+                await fs.unlink(req.file.path);
+            } catch (e) {}
+        }
+        
         res.status(500).json({
             error: 'Compression failed',
             message: error.message || 'An error occurred during compression'
