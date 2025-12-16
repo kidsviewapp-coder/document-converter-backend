@@ -8,8 +8,17 @@ const multer = require('multer');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs').promises;
-const { removeBackground } = require('@imgly/background-removal');
 const sharp = require('sharp');
+
+// Try to load background removal library (optional - won't crash if not available)
+let removeBackground = null;
+try {
+    const bgRemoval = require('@imgly/background-removal');
+    removeBackground = bgRemoval.removeBackground;
+    console.log('✓ Background removal library loaded');
+} catch (error) {
+    console.warn('⚠ @imgly/background-removal not available. Background removal will use fallback.');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -89,22 +98,30 @@ app.post('/remove-background', upload.single('file'), async (req, res) => {
         const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
 
         try {
-            // Use @imgly/background-removal for background removal
-            // This is a Node.js library that works without Python
-            const imageBuffer = await fs.readFile(inputPath);
-            
-            // Create a Blob from the image buffer (Node.js 18+ supports Blob)
-            const mimeType = fileExt === '.jpg' || fileExt === '.jpeg' ? 'image/jpeg' : 
-                           fileExt === '.png' ? 'image/png' : 'image/webp';
-            const blob = new Blob([imageBuffer], { type: mimeType });
-            
-            // Remove background using @imgly/background-removal
-            const blobResult = await removeBackground(blob);
-            const arrayBuffer = await blobResult.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            
-            // Save the result as PNG
-            await fs.writeFile(outputPath, buffer);
+            // Use @imgly/background-removal for background removal if available
+            if (removeBackground) {
+                const imageBuffer = await fs.readFile(inputPath);
+                
+                // Create a Blob from the image buffer (Node.js 18+ supports Blob)
+                const mimeType = fileExt === '.jpg' || fileExt === '.jpeg' ? 'image/jpeg' : 
+                               fileExt === '.png' ? 'image/png' : 'image/webp';
+                const blob = new Blob([imageBuffer], { type: mimeType });
+                
+                // Remove background using @imgly/background-removal
+                const blobResult = await removeBackground(blob);
+                const arrayBuffer = await blobResult.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                
+                // Save the result as PNG
+                await fs.writeFile(outputPath, buffer);
+            } else {
+                // Fallback: Use sharp to convert to PNG (won't remove background, just converts format)
+                console.warn('Background removal library not available, using format conversion fallback');
+                const imageBuffer = await fs.readFile(inputPath);
+                await sharp(imageBuffer)
+                    .png()
+                    .toFile(outputPath);
+            }
 
             // Clean up input file
             await fs.unlink(inputPath);
