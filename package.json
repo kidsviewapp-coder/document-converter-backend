@@ -1,7 +1,7 @@
 {
   "name": "pdfound-backend",
   "version": "1.0.0",
-  "description": "PDFound backend service - Document converter API",
+  "description": "PDFound backend service - PDF conversion API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
