@@ -1,7 +1,6 @@
-# PDFound Backend Dockerfile
 FROM node:18-slim
 
-# Install system dependencies for document conversion
+# Install system dependencies for LibreOffice, Ghostscript, image processing, and OCR
 RUN apt-get update && apt-get install -y \
     libreoffice \
     ghostscript \
@@ -10,12 +9,7 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     tesseract-ocr \
     tesseract-ocr-eng \
-    python3 \
-    python3-pip \
     && rm -rf /var/lib/apt/lists/*
-
-# Install rembg for background removal (optional - can be removed if not needed)
-RUN pip3 install rembg
 
 # Set working directory
 WORKDIR /app
@@ -29,12 +23,18 @@ RUN npm install --production
 # Copy application files
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p uploads downloads
+# Create directories for uploads and outputs
+RUN mkdir -p uploads outputs
 
 # Expose port
 EXPOSE 3000
 
-# Start the server
-CMD ["npm", "start"]
+# Set environment variables
+ENV PORT=3000
+ENV UPLOAD_DIR=./uploads
+ENV OUTPUT_DIR=./outputs
+ENV NODE_ENV=production
+
+# Start server
+CMD ["node", "server.js"]
 
