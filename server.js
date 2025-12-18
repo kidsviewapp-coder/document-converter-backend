@@ -78,6 +78,39 @@ app.get('/health', (req, res) => {
 });
 
 /**
+ * app-ads.txt Endpoint
+ * GET /app-ads.txt
+ * Serves the app-ads.txt file for AdMob verification
+ */
+app.get('/app-ads.txt', async (req, res) => {
+    try {
+        const appAdsPath = path.join(__dirname, 'app-ads.txt');
+        
+        // Check if file exists
+        try {
+            await fs.access(appAdsPath);
+        } catch {
+            return res.status(404).json({
+                error: 'File not found',
+                message: 'app-ads.txt file not found'
+            });
+        }
+
+        // Read and send file with correct Content-Type
+        const fileContent = await fs.readFile(appAdsPath, 'utf-8');
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+        res.send(fileContent);
+    } catch (error) {
+        console.error('app-ads.txt error:', error);
+        res.status(500).json({
+            error: 'Server error',
+            message: 'Could not serve app-ads.txt'
+        });
+    }
+});
+
+/**
  * Background Removal Endpoint
  * POST /remove-background
  */
