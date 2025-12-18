@@ -39,6 +39,24 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Serve logo image
+app.get('/logo.png', async (req, res) => {
+    try {
+        const logoPath = path.join(__dirname, 'logo.png');
+        try {
+            await fs.access(logoPath);
+            res.setHeader('Content-Type', 'image/png');
+            res.sendFile(logoPath);
+        } catch {
+            // If logo doesn't exist, return 404
+            res.status(404).send('Logo not found');
+        }
+    } catch (error) {
+        console.error('Logo error:', error);
+        res.status(500).send('Error serving logo');
+    }
+});
+
 // Create necessary directories
 const UPLOAD_DIR = 'uploads';
 const DOWNLOAD_DIR = 'downloads';
@@ -70,6 +88,111 @@ const upload = multer({
         // Accept all file types for now
         cb(null, true);
     }
+});
+
+// Root endpoint - Welcome message
+app.get('/', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>PDFound - Backend Server</title>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                }
+                .container {
+                    background: white;
+                    border-radius: 20px;
+                    padding: 60px 40px;
+                    max-width: 800px;
+                    width: 100%;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                    text-align: center;
+                }
+                .logo {
+                    width: 150px;
+                    height: 150px;
+                    margin: 0 auto 30px;
+                    display: block;
+                    animation: float 3s ease-in-out infinite;
+                }
+                @keyframes float {
+                    0%, 100% { transform: translateY(0px); }
+                    50% { transform: translateY(-10px); }
+                }
+                h1 {
+                    font-size: 3.5rem;
+                    color: #667eea;
+                    margin-bottom: 30px;
+                    font-weight: 700;
+                    line-height: 1.2;
+                }
+                .message {
+                    font-size: 1.5rem;
+                    color: #333;
+                    margin-bottom: 40px;
+                    line-height: 1.6;
+                }
+                .email {
+                    font-size: 1.3rem;
+                    color: #764ba2;
+                    font-weight: 600;
+                    margin-top: 30px;
+                }
+                .email a {
+                    color: #667eea;
+                    text-decoration: none;
+                    transition: color 0.3s;
+                }
+                .email a:hover {
+                    color: #764ba2;
+                    text-decoration: underline;
+                }
+                @media (max-width: 600px) {
+                    h1 {
+                        font-size: 2.5rem;
+                    }
+                    .message {
+                        font-size: 1.2rem;
+                    }
+                    .email {
+                        font-size: 1.1rem;
+                    }
+                    .container {
+                        padding: 40px 20px;
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <img src="/logo.png" alt="PDFound Logo" class="logo" onerror="this.style.display='none'">
+                <h1>Thank You for Using PDFound</h1>
+                <p class="message">
+                    We appreciate your support! If you have any questions, feedback, or inquiries, please don't hesitate to reach out to us.
+                </p>
+                <p class="email">
+                    Email us at: <a href="mailto:whyxee@gmail.com">whyxee@gmail.com</a>
+                </p>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
 // Health check endpoint
