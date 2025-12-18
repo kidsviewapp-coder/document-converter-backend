@@ -84,29 +84,32 @@ app.get('/health', (req, res) => {
  */
 app.get('/app-ads.txt', async (req, res) => {
     try {
-        const appAdsPath = path.join(__dirname, 'app-ads.txt');
+        // AdMob app-ads.txt content
+        const appAdsContent = 'google.com, pub-8632154502253372, DIRECT, f08c47fec0942fa0\n';
         
-        // Check if file exists
+        // Try to read from file first (if it exists)
+        const appAdsPath = path.join(__dirname, 'app-ads.txt');
+        let fileContent = appAdsContent; // Default content
+        
         try {
-            await fs.access(appAdsPath);
-        } catch {
-            return res.status(404).json({
-                error: 'File not found',
-                message: 'app-ads.txt file not found'
-            });
+            const fileExists = await fs.access(appAdsPath).then(() => true).catch(() => false);
+            if (fileExists) {
+                fileContent = await fs.readFile(appAdsPath, 'utf-8');
+            }
+        } catch (fileError) {
+            // If file doesn't exist, use default content
+            console.log('app-ads.txt file not found, using embedded content');
         }
 
-        // Read and send file with correct Content-Type
-        const fileContent = await fs.readFile(appAdsPath, 'utf-8');
+        // Send file with correct Content-Type
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
         res.send(fileContent);
     } catch (error) {
         console.error('app-ads.txt error:', error);
-        res.status(500).json({
-            error: 'Server error',
-            message: 'Could not serve app-ads.txt'
-        });
+        // Even on error, return the content
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.send('google.com, pub-8632154502253372, DIRECT, f08c47fec0942fa0\n');
     }
 });
 
