@@ -128,8 +128,19 @@ app.get('/', (req, res) => {
                     width: 150px;
                     height: 150px;
                     margin: 0 auto 30px;
-                    display: block;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                     animation: float 3s ease-in-out infinite;
+                }
+                .logo img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: contain;
+                }
+                .logo svg {
+                    width: 100%;
+                    height: 100%;
                 }
                 @keyframes float {
                     0%, 100% { transform: translateY(0px); }
@@ -181,7 +192,29 @@ app.get('/', (req, res) => {
         </head>
         <body>
             <div class="container">
-                <img src="/logo.png" alt="PDFound Logo" class="logo" onerror="this.style.display='none'">
+                <div class="logo">
+                    <img src="https://raw.githubusercontent.com/kidsviewapp-coder/PDFound-App/main/icon_pdfound.png" 
+                         alt="PDFound Logo" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <svg width="150" height="150" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+                        <defs>
+                            <linearGradient id="folderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Folder shape -->
+                        <path d="M 30 50 L 30 120 L 120 120 L 120 70 L 70 70 L 60 50 Z" fill="url(#folderGradient)" stroke="#667eea" stroke-width="2"/>
+                        <!-- Folder front flap -->
+                        <path d="M 30 50 L 60 50 L 70 70 L 30 70 Z" fill="url(#folderGradient)" opacity="0.8"/>
+                        <!-- Magnifying glass -->
+                        <circle cx="100" cy="90" r="15" fill="none" stroke="white" stroke-width="3"/>
+                        <line x1="110" y1="100" x2="125" y2="115" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                        <!-- PDF text -->
+                        <text x="75" y="135" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#667eea" text-anchor="middle">PDF</text>
+                    </svg>
+                </div>
                 <h1>Thank You for Using PDFound</h1>
                 <p class="message">
                     We appreciate your support! If you have any questions, feedback, or inquiries, please don't hesitate to reach out to us.
@@ -198,6 +231,16 @@ app.get('/', (req, res) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: 'Server is running' });
+});
+
+/**
+ * robots.txt Endpoint
+ * GET /robots.txt
+ * Allows Google to crawl app-ads.txt
+ */
+app.get('/robots.txt', (req, res) => {
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.send('User-agent: *\nAllow: /app-ads.txt\nDisallow: /\n');
 });
 
 /**
@@ -750,24 +793,50 @@ app.post('/compress', upload.single('file'), async (req, res) => {
         const inputPath = req.file.path;
         const quality = parseInt(req.body.quality) || 50;
         
+        // Get original file size
+        const originalSize = req.file.size;
+        
         // Use Ghostscript to compress PDF
         const baseName = path.basename(req.file.originalname, path.extname(req.file.originalname));
         const outputFileName = `${baseName}_compressed.pdf`;
         const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
         
-        // Ghostscript compression settings based on quality
+        // Ghostscript compression settings - More aggressive compression for better results
         // Lower quality = higher compression
-        let gsQuality = '/screen'; // 72 dpi
-        if (quality >= 75) {
-            gsQuality = '/prepress'; // 300 dpi
+        let gsQuality = '/screen'; // 72 dpi - maximum compression
+        let additionalFlags = '';
+        
+        if (quality >= 90) {
+            // Very high quality (90-100): Light compression, preserve quality but still compress
+            gsQuality = '/printer';
+            additionalFlags = '-dColorImageResolution=200 -dGrayImageResolution=200 -dMonoImageResolution=200 -dDownsampleColorImages=true -dDownsampleGrayImages=true -dColorImageDownsampleThreshold=1.3 -dGrayImageDownsampleThreshold=1.3 -dJPEGQ=90 -dAutoRotatePages=/None';
+        } else if (quality >= 75) {
+            // High quality (75-89): Moderate compression, good quality
+            gsQuality = '/printer';
+            additionalFlags = '-dColorImageResolution=150 -dGrayImageResolution=150 -dMonoImageResolution=150 -dDownsampleColorImages=true -dDownsampleGrayImages=true -dDownsampleMonoImages=true -dColorImageDownsampleThreshold=1.2 -dGrayImageDownsampleThreshold=1.2 -dMonoImageDownsampleThreshold=1.2 -dJPEGQ=85 -dAutoRotatePages=/None';
         } else if (quality >= 50) {
-            gsQuality = '/ebook'; // 150 dpi
+            // Medium quality (50-74): Balanced compression
+            gsQuality = '/ebook';
+            additionalFlags = '-dColorImageResolution=150 -dGrayImageResolution=150 -dMonoImageResolution=150 -dDownsampleColorImages=true -dDownsampleGrayImages=true -dColorImageDownsampleThreshold=1.5 -dGrayImageDownsampleThreshold=1.5 -dJPEGQ=80';
         } else if (quality >= 25) {
-            gsQuality = '/printer'; // 300 dpi
+            // Medium-high compression (25-49): Good compression with acceptable quality
+            gsQuality = '/printer';
+            additionalFlags = '-dColorImageResolution=150 -dGrayImageResolution=150 -dMonoImageResolution=150 -dDownsampleColorImages=true -dDownsampleGrayImages=true -dDownsampleMonoImages=true -dColorImageDownsampleThreshold=1.2 -dGrayImageDownsampleThreshold=1.2 -dMonoImageDownsampleThreshold=1.2 -dJPEGQ=75 -dAutoRotatePages=/None';
+        } else {
+            // Maximum compression (1-24): Aggressive compression for smallest file size
+            gsQuality = '/screen';
+            additionalFlags = '-dColorImageResolution=72 -dGrayImageResolution=72 -dMonoImageResolution=72 -dDownsampleColorImages=true -dDownsampleGrayImages=true -dDownsampleMonoImages=true -dColorImageDownsampleThreshold=1.0 -dGrayImageDownsampleThreshold=1.0 -dMonoImageDownsampleThreshold=1.0 -dJPEGQ=60 -dAutoRotatePages=/None -dEmbedAllFonts=false -dSubsetFonts=true -dCompressFonts=true';
         }
 
-        // Compress using Ghostscript
-        await execAsync(`gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${gsQuality} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`);
+        // Additional compression flags for all quality levels - always apply optimization
+        const compressionFlags = '-dOptimize=true -dFastWebView=false -dDetectDuplicateImages=true -dCompressStreams=true -dUseFlateCompression=true -dCompressPages=true';
+        
+        // Compress using Ghostscript with aggressive settings
+        await execAsync(`gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${gsQuality} ${additionalFlags} ${compressionFlags} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`);
+
+        // Get compressed file size
+        const stats = await fs.stat(outputPath);
+        const compressedSize = stats.size;
 
         // Clean up input file
         await fs.unlink(inputPath);
@@ -776,7 +845,9 @@ app.post('/compress', upload.single('file'), async (req, res) => {
             success: true,
             downloadUrl: `/downloads/${outputFileName}`,
             fileName: outputFileName,
-            message: 'Compression successful'
+            message: 'Compression successful',
+            originalSize: originalSize,
+            fileSize: compressedSize
         });
 
     } catch (error) {
