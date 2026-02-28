@@ -252,11 +252,11 @@ app.get('/app-ads.txt', async (req, res) => {
     try {
         // AdMob app-ads.txt content
         const appAdsContent = 'google.com, pub-8632154502253372, DIRECT, f08c47fec0942fa0\n';
-        
+
         // Try to read from file first (if it exists)
         const appAdsPath = path.join(__dirname, 'app-ads.txt');
         let fileContent = appAdsContent; // Default content
-        
+
         try {
             const fileExists = await fs.access(appAdsPath).then(() => true).catch(() => false);
             if (fileExists) {
@@ -295,7 +295,7 @@ app.post('/remove-background', upload.single('file'), async (req, res) => {
         const inputPath = req.file.path;
         const originalName = req.file.originalname;
         const fileExt = path.extname(originalName).toLowerCase();
-        
+
         // Validate file type
         const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
         if (!allowedExtensions.includes(fileExt)) {
@@ -350,7 +350,7 @@ app.post('/remove-background', upload.single('file'), async (req, res) => {
 
     } catch (error) {
         console.error('Background removal error:', error);
-        
+
         // Clean up files on error
         if (req.file?.path) {
             try {
@@ -396,7 +396,7 @@ app.post('/convert', upload.single('file'), async (req, res) => {
         if ((fromType === 'jpg' || fromType === 'jpeg') && toType === 'png') {
             outputFileName = `${baseName}.png`;
             outputPath = path.join(DOWNLOAD_DIR, outputFileName);
-            
+
             await sharp(inputPath)
                 .png()
                 .toFile(outputPath);
@@ -405,10 +405,10 @@ app.post('/convert', upload.single('file'), async (req, res) => {
         else if ((fromType === 'docx' || fromType === 'doc') && toType === 'pdf') {
             outputFileName = `${baseName}.pdf`;
             outputPath = path.join(DOWNLOAD_DIR, outputFileName);
-            
+
             // Use LibreOffice to convert Word to PDF
             await execAsync(`libreoffice --headless --convert-to pdf --outdir "${DOWNLOAD_DIR}" "${inputPath}"`);
-            
+
             // LibreOffice creates file with same name but .pdf extension
             const libreOfficeOutput = path.join(DOWNLOAD_DIR, path.basename(inputPath, path.extname(inputPath)) + '.pdf');
             if (await fs.access(libreOfficeOutput).then(() => true).catch(() => false)) {
@@ -422,20 +422,20 @@ app.post('/convert', upload.single('file'), async (req, res) => {
         else if ((fromType === 'jpg' || fromType === 'jpeg' || fromType === 'png' || fromType === 'webp') && toType === 'pdf') {
             outputFileName = `${baseName}.pdf`;
             outputPath = path.join(DOWNLOAD_DIR, outputFileName);
-            
+
             // Use sharp to convert image to PDF
             const image = sharp(inputPath);
             const metadata = await image.metadata();
             const pdfDoc = await PDFDocument.create();
             const imageBuffer = await fs.readFile(inputPath);
-            
+
             let pdfImage;
             if (fromType === 'png') {
                 pdfImage = await pdfDoc.embedPng(imageBuffer);
             } else {
                 pdfImage = await pdfDoc.embedJpg(imageBuffer);
             }
-            
+
             const page = pdfDoc.addPage([metadata.width || 612, metadata.height || 792]);
             page.drawImage(pdfImage, {
                 x: 0,
@@ -443,7 +443,7 @@ app.post('/convert', upload.single('file'), async (req, res) => {
                 width: metadata.width || 612,
                 height: metadata.height || 792,
             });
-            
+
             const pdfBytes = await pdfDoc.save();
             await fs.writeFile(outputPath, pdfBytes);
         }
@@ -451,11 +451,12 @@ app.post('/convert', upload.single('file'), async (req, res) => {
         else if (fromType === 'pdf' && (toType === 'jpg' || toType === 'jpeg')) {
             outputFileName = `${baseName}.jpg`;
             outputPath = path.join(DOWNLOAD_DIR, outputFileName);
-            
+
             // Use pdf2pic or poppler-utils (pdftoppm) to convert PDF to image
             try {
                 // Try using pdftoppm (poppler-utils) - installed in Docker
-                await execAsync(`pdftoppm -jpeg -singlefile -r 300 "${inputPath}" "${path.join(DOWNLOAD_DIR, baseName)}"`);
+                // Provide maxBuffer 10MB to prevent stderr warnings from crashing node's exec
+                await execAsync(`pdftoppm -jpeg -singlefile -r 200 "${inputPath}" "${path.join(DOWNLOAD_DIR, baseName)}"`, { maxBuffer: 10 * 1024 * 1024 });
                 const jpegOutput = path.join(DOWNLOAD_DIR, `${baseName}.jpg`);
                 if (await fs.access(jpegOutput).then(() => true).catch(() => false)) {
                     await fs.rename(jpegOutput, outputPath);
@@ -463,19 +464,31 @@ app.post('/convert', upload.single('file'), async (req, res) => {
                     throw new Error('PDF to JPG conversion failed');
                 }
             } catch (error) {
+                console.log('pdftoppm failed or unavailable, falling back to pdf2pic (density 150 to prevent out-of-memory)...');
                 // Fallback: try using pdf2pic if available
                 const pdf2pic = require('pdf2pic');
                 const convert = pdf2pic.fromPath(inputPath, {
-                    density: 300,
+                    density: 150, // Reduced from 300 to 150 to prevent OOM crash on Render Free Tier
                     saveFilename: baseName,
                     savePath: DOWNLOAD_DIR,
-                    format: 'jpg'
+                    format: 'jpg',
+                    width: 1200, // Explicit size limit helps GhostScript manage memory
+                    height: 1600
                 });
-                const result = await convert(1);
+                const result = await convert(1, { responseType: "image" });
                 if (result.path) {
                     await fs.rename(result.path, outputPath);
+                } else if (result.base64) {
+                    // Sometimes it returns base64 instead of path depending on options
+                    await fs.writeFile(outputPath, Buffer.from(result.base64, 'base64'));
                 } else {
-                    throw new Error('PDF to JPG conversion failed');
+                    // One more check for default _1.jpg suffix
+                    const altOutput = path.join(DOWNLOAD_DIR, `${baseName}.1.jpg`);
+                    if (await fs.access(altOutput).then(() => true).catch(() => false)) {
+                        await fs.rename(altOutput, outputPath);
+                    } else {
+                        throw new Error('PDF to JPG conversion failed with pdf2pic');
+                    }
                 }
             }
         }
@@ -494,14 +507,14 @@ app.post('/convert', upload.single('file'), async (req, res) => {
         // Return success response
         res.json({
             success: true,
-            downloadUrl: `/downloads/${outputFileName}`,
+            downloadUrl: `/ downloads / ${outputFileName}`,
             fileName: outputFileName,
             message: 'Conversion successful'
         });
 
     } catch (error) {
         console.error('Conversion error:', error);
-        
+
         if (req.file?.path) {
             try {
                 if (await fs.access(req.file.path).then(() => true).catch(() => false)) {
@@ -527,15 +540,15 @@ app.post('/convert/images', upload.array('files'), async (req, res) => {
     const uploadedFiles = [];
     try {
         // Log request details for debugging
-        console.log(`[convert/images] Request received`);
-        console.log(`[convert/images] Files: ${req.files?.length || 0}`);
-        console.log(`[convert/images] Body keys: ${Object.keys(req.body || {})}`);
+        console.log(`[convert / images] Request received`);
+        console.log(`[convert / images] Files: ${req.files?.length || 0}`);
+        console.log(`[convert / images] Body keys: ${Object.keys(req.body || {})}`);
         if (req.files && req.files.length > 0) {
             req.files.forEach((file, index) => {
-                console.log(`[convert/images] File ${index + 1}: ${file.originalname}, size: ${file.size} bytes`);
+                console.log(`[convert / images] File ${index + 1}: ${file.originalname}, size: ${file.size} bytes`);
             });
         }
-        
+
         if (!req.files || req.files.length === 0) {
             console.error('[convert/images] No files received');
             return res.status(400).json({
@@ -545,14 +558,14 @@ app.post('/convert/images', upload.array('files'), async (req, res) => {
         }
 
         const toType = (req.body.toType || 'pdf').toLowerCase();
-        console.log(`[convert/images] Converting ${req.files.length} images to ${toType}`);
-        
+        console.log(`[convert / images] Converting ${req.files.length} images to ${toType} `);
+
         if (toType !== 'pdf') {
             // Clean up uploaded files
             for (const file of req.files) {
                 try {
                     await fs.unlink(file.path);
-                } catch (e) {}
+                } catch (e) { }
             }
             return res.status(400).json({
                 error: 'Unsupported conversion',
@@ -568,11 +581,11 @@ app.post('/convert/images', upload.array('files'), async (req, res) => {
         // Process each image in batch
         for (const file of req.files) {
             try {
-                console.log(`[convert/images] Processing image ${processedCount + 1}/${req.files.length}: ${file.originalname}`);
+                console.log(`[convert / images] Processing image ${processedCount + 1}/${req.files.length}: ${file.originalname}`);
                 const imageBuffer = await fs.readFile(file.path);
                 const image = sharp(imageBuffer);
                 const metadata = await image.metadata();
-                
+
                 let pdfImage;
                 const ext = path.extname(file.originalname).toLowerCase();
                 if (ext === '.png') {
@@ -580,7 +593,7 @@ app.post('/convert/images', upload.array('files'), async (req, res) => {
                 } else {
                     pdfImage = await pdfDoc.embedJpg(imageBuffer);
                 }
-                
+
                 const page = pdfDoc.addPage([metadata.width || 612, metadata.height || 792]);
                 page.drawImage(pdfImage, {
                     x: 0,
@@ -602,7 +615,7 @@ app.post('/convert/images', upload.array('files'), async (req, res) => {
         // Generate output filename
         const outputFileName = `images_${Date.now()}.pdf`;
         const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
-        
+
         // Save PDF
         const pdfBytes = await pdfDoc.save();
         await fs.writeFile(outputPath, pdfBytes);
@@ -612,7 +625,7 @@ app.post('/convert/images', upload.array('files'), async (req, res) => {
         for (const file of req.files) {
             try {
                 await fs.unlink(file.path);
-            } catch (e) {}
+            } catch (e) { }
         }
 
         res.json({
@@ -624,14 +637,14 @@ app.post('/convert/images', upload.array('files'), async (req, res) => {
 
     } catch (error) {
         console.error('[convert/images] Conversion error:', error);
-        
+
         // Clean up uploaded files on error
         for (const file of uploadedFiles) {
             try {
                 await fs.unlink(file.path);
-            } catch (e) {}
+            } catch (e) { }
         }
-        
+
         res.status(500).json({
             error: 'Conversion failed',
             message: error.message || 'An error occurred during conversion'
@@ -673,7 +686,7 @@ app.post('/merge', upload.array('files'), async (req, res) => {
         // Generate output filename
         const outputFileName = `merged_${Date.now()}.pdf`;
         const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
-        
+
         // Save merged PDF
         const mergedPdfBytes = await mergedPdf.save();
         await fs.writeFile(outputPath, mergedPdfBytes);
@@ -682,7 +695,7 @@ app.post('/merge', upload.array('files'), async (req, res) => {
         for (const file of req.files) {
             try {
                 await fs.unlink(file.path);
-            } catch (e) {}
+            } catch (e) { }
         }
 
         res.json({
@@ -694,14 +707,14 @@ app.post('/merge', upload.array('files'), async (req, res) => {
 
     } catch (error) {
         console.error('Merge error:', error);
-        
+
         // Clean up uploaded files on error
         for (const file of uploadedFiles) {
             try {
                 await fs.unlink(file.path);
-            } catch (e) {}
+            } catch (e) { }
         }
-        
+
         res.status(500).json({
             error: 'Merge failed',
             message: error.message || 'An error occurred during merge'
@@ -763,13 +776,13 @@ app.post('/split', upload.single('file'), async (req, res) => {
 
     } catch (error) {
         console.error('Split error:', error);
-        
+
         if (req.file?.path) {
             try {
                 await fs.unlink(req.file.path);
-            } catch (e) {}
+            } catch (e) { }
         }
-        
+
         res.status(500).json({
             error: 'Split failed',
             message: error.message || 'An error occurred during split'
@@ -792,20 +805,20 @@ app.post('/compress', upload.single('file'), async (req, res) => {
 
         const inputPath = req.file.path;
         const quality = parseInt(req.body.quality) || 50;
-        
+
         // Get original file size
         const originalSize = req.file.size;
-        
+
         // Use Ghostscript to compress PDF
         const baseName = path.basename(req.file.originalname, path.extname(req.file.originalname));
         const outputFileName = `${baseName}_compressed.pdf`;
         const outputPath = path.join(DOWNLOAD_DIR, outputFileName);
-        
+
         // Ghostscript compression settings - More aggressive compression for better results
         // Lower quality = higher compression
         let gsQuality = '/screen'; // 72 dpi - maximum compression
         let additionalFlags = '';
-        
+
         if (quality >= 90) {
             // Very high quality (90-100): Light compression, preserve quality but still compress
             gsQuality = '/printer';
@@ -830,7 +843,7 @@ app.post('/compress', upload.single('file'), async (req, res) => {
 
         // Additional compression flags for all quality levels - always apply optimization
         const compressionFlags = '-dOptimize=true -dFastWebView=false -dDetectDuplicateImages=true -dCompressStreams=true -dUseFlateCompression=true -dCompressPages=true';
-        
+
         // Compress using Ghostscript with aggressive settings
         await execAsync(`gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${gsQuality} ${additionalFlags} ${compressionFlags} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`);
 
@@ -852,13 +865,13 @@ app.post('/compress', upload.single('file'), async (req, res) => {
 
     } catch (error) {
         console.error('Compress error:', error);
-        
+
         if (req.file?.path) {
             try {
                 await fs.unlink(req.file.path);
-            } catch (e) {}
+            } catch (e) { }
         }
-        
+
         res.status(500).json({
             error: 'Compression failed',
             message: error.message || 'An error occurred during compression'
