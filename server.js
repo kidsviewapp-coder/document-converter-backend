@@ -88,7 +88,7 @@ app.get('/', (req, res) => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Prompt Gallery - Unlock Your AI Creativity</title>
+            <title>PDFound - The Premium PDF Toolkit</title>
             <!-- Google Font -->
             <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
             <!-- Icons -->
@@ -103,6 +103,8 @@ app.get('/', (req, res) => {
                     --card-bg: rgba(30, 41, 59, 0.7);
                     --text: #f8fafc;
                     --text-muted: #94a3b8;
+                    --glass: rgba(255, 255, 255, 0.03);
+                    --border: rgba(255, 255, 255, 0.08);
                 }
 
                 * {
@@ -226,61 +228,132 @@ app.get('/', (req, res) => {
                     box-shadow: 0 15px 40px rgba(99, 102, 241, 0.6);
                 }
 
-                /* App Showcase Section */
-                .showcase {
-                    padding: 80px 0;
+                .btn-outline {
+                    background: var(--glass);
+                    border: 1px solid var(--border);
+                    color: var(--text);
                 }
 
-                .showcase-grid {
+                .btn-outline:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                    transform: translateY(-5px);
+                }
+
+                .features-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 30px;
-                    margin-top: 50px;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 24px;
+                    margin-bottom: 120px;
                 }
 
-                .showcase-card {
-                    text-align: center;
+                .feature-card {
                     background: var(--card-bg);
-                    border-radius: 20px;
-                    padding: 20px;
-                    border: 1px solid rgba(255, 255, 255, 0.05);
-                    transition: all 0.3s ease;
+                    padding: 32px;
+                    border-radius: 24px;
+                    border: 1px solid var(--border);
+                    transition: transform 0.3s;
                 }
 
-                .showcase-card:hover {
-                    transform: translateY(-10px);
-                    border-color: var(--primary);
+                .feature-card:hover {
+                    transform: translateY(-8px);
                 }
 
-                .screenshot {
-                    width: 100%;
-                    border-radius: 12px;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                .feature-icon {
+                    font-size: 1.8rem;
+                    color: var(--primary);
                     margin-bottom: 20px;
                 }
 
-                .number-badge {
-                    display: inline-block;
-                    width: 36px;
-                    height: 36px;
-                    background: var(--primary);
-                    color: white;
-                    border-radius: 50%;
-                    line-height: 36px;
-                    font-weight: 800;
-                    margin-bottom: 15px;
-                    font-size: 1.2rem;
+                .feature-card h3 {
+                    margin-bottom: 12px;
+                    font-size: 1.4rem;
                 }
 
-                .showcase-card h3 {
-                    font-size: 1.1rem;
-                    margin-bottom: 10px;
-                    color: #fff;
+                /* AD SECTION - Prompt Gallery */
+                .ad-section {
+                    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+                    padding: 80px 40px;
+                    border-radius: 40px;
+                    border: 1px solid var(--border);
+                    margin-bottom: 100px;
+                    position: relative;
+                    overflow: hidden;
                 }
+
+                .ad-content {
+                    display: flex;
+                    gap: 60px;
+                    align-items: center;
+                    flex-wrap: wrap;
+                }
+
+                .ad-text {
+                    flex: 1;
+                    min-width: 300px;
+                }
+
+                .ad-tag {
+                    display: inline-block;
+                    padding: 6px 14px;
+                    background: var(--primary);
+                    border-radius: 100px;
+                    font-size: 0.8rem;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    margin-bottom: 20px;
+                    letter-spacing: 1px;
+                }
+
+                .ad-text h2 {
+                    font-size: 3rem;
+                    margin-bottom: 24px;
+                    line-height: 1.2;
+                }
+
+                /* Non-linear showcase */
+                .ad-visual {
+                    flex: 1.2;
+                    display: flex;
+                    justify-content: center;
+                    position: relative;
+                    height: 500px;
+                    perspective: 1000px;
+                }
+
+                .phone-stack {
+                    position: relative;
+                    width: 100%;
+                    max-width: 450px;
+                }
+
+                .phone-img {
+                    position: absolute;
+                    width: 200px;
+                    border-radius: 20px;
+                    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+                    border: 4px solid #1e293b;
+                    transition: all 0.5s ease;
+                }
+
+                /* Staggered dynamic layout */
+                .img-1 { z-index: 5; top: 0; left: 50%; transform: translateX(-50%) rotate(0deg); width: 220px; }
+                .img-2 { z-index: 4; top: 40px; left: 10%; transform: rotate(-10deg) scale(0.9); }
+                .img-3 { z-index: 4; top: 40px; right: 10%; transform: rotate(10deg) scale(0.9); }
+                .img-4 { z-index: 3; bottom: -20px; left: 20%; transform: rotate(-5deg) scale(0.85); opacity: 0.7; }
+                .img-5 { z-index: 3; bottom: -20px; right: 20%; transform: rotate(5deg) scale(0.85); opacity: 0.7; }
+
+                .phone-stack:hover .phone-img {
+                    transform: scale(1.05) rotate(0deg);
+                    opacity: 1;
+                }
+
+                .phone-stack:hover .img-2 { left: -5%; }
+                .phone-stack:hover .img-3 { right: -5%; }
+
 
                 .contact-section {
                     text-align: center;
-                    padding: 100px 0;
+                    padding: 60px 0 100px;
                 }
 
                 .contact-box {
@@ -300,7 +373,7 @@ app.get('/', (req, res) => {
 
                 footer {
                     padding: 60px 0 40px;
-                    border-top: 1px solid rgba(255, 255, 255, 0.05);
+                    border-top: 1px solid var(--border);
                     text-align: center;
                 }
 
@@ -317,9 +390,12 @@ app.get('/', (req, res) => {
                     font-size: 0.9rem;
                 }
 
-                @media (max-width: 768px) {
+                @media (max-width: 968px) {
+                    .ad-visual { height: 400px; margin-top: 40px; }
+                    .phone-img { width: 150px; }
+                    .img-1 { width: 170px; }
+                    .ad-text h2 { font-size: 2.2rem; }
                     .hero h1 { font-size: 2.8rem; }
-                    .showcase-grid { grid-template-columns: 1fr; }
                 }
             </style>
         </head>
@@ -331,54 +407,66 @@ app.get('/', (req, res) => {
                 <nav>
                     <div class="logo-container">
                         <img src="/logo.webp" alt="Logo" class="logo-img">
-                        <span class="brand-name">Prompt Gallery</span>
+                        <span class="brand-name">PDFound</span>
                     </div>
                 </nav>
 
                 <section class="hero">
-                    <h1>Unlock Your AI <br> Creativity instantly.</h1>
-                    <p>Discover, select, and create with the world's most powerful AI prompt library. Curated for creators, developers, and visionaries.</p>
+                    <h1>Handle PDFs <br> with Perfection.</h1>
+                    <p>The ultimate toolkit to convert, merge, split, and compress your documents on Android. Seamlessly private, amazingly fast.</p>
                     <div class="cta-buttons">
                         <a href="https://play.google.com/store/apps/details?id=why.xee.pdfound" class="btn btn-primary">
                             <i class="fab fa-google-play"></i> Get on Play Store
                         </a>
+                        <a href="/privacy-policy" class="btn btn-outline">Privacy Policy</a>
                     </div>
                 </section>
 
-                <section class="showcase">
-                    <div class="showcase-grid">
-                        <div class="showcase-card">
-                            <div class="number-badge">1</div>
-                            <img src="/images/screenshot1.jpg" alt="Unlock Creativity" class="screenshot">
-                            <h3>Unlock Creativity</h3>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <i class="fas fa-file-pdf feature-icon"></i>
+                        <h3>Safe Conversion</h3>
+                        <p>Convert images and office docs to high-quality PDF files instantly.</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-compress-arrows-alt feature-icon"></i>
+                        <h3>Smart Size</h3>
+                        <p>Reduce file sizes without losing quality. Perfect for sharing via email.</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-layer-group feature-icon"></i>
+                        <h3>Merge & Split</h3>
+                        <p>Combine multiple files or extract pages with a single tap.</p>
+                    </div>
+                </div>
+
+                <!-- Advertisement Section for Prompt Gallery -->
+                <section class="ad-section">
+                    <div class="ad-content">
+                        <div class="ad-text">
+                            <span class="ad-tag">Our Creative Partner App</span>
+                            <h2>Unlock Your AI Creativity with <br> <strong>Prompt Gallery</strong></h2>
+                            <p style="color: var(--text-muted); margin-bottom: 30px;">Looking for the perfect AI art inspiration? Browse thousands of curated Midjourney and DALL-E prompts to create stunning visual art in seconds.</p>
+                            <a href="https://play.google.com/store/apps/details?id=why.xee.pdfound" class="btn btn-primary" style="background: linear-gradient(135deg, #f472b6, #a855f7);">
+                                <i class="fas fa-magic"></i> Try Prompt Gallery
+                            </a>
                         </div>
-                        <div class="showcase-card">
-                            <div class="number-badge">2</div>
-                            <img src="/images/screenshot2.jpg" alt="Discover Art" class="screenshot">
-                            <h3>Trending Prompts</h3>
-                        </div>
-                        <div class="showcase-card">
-                            <div class="number-badge">3</div>
-                            <img src="/images/screenshot3.jpg" alt="Browse & Pick" class="screenshot">
-                            <h3>Browse & Pick</h3>
-                        </div>
-                        <div class="showcase-card">
-                            <div class="number-badge">4</div>
-                            <img src="/images/screenshot4.jpg" alt="AI Library" class="screenshot">
-                            <h3>Exclusive Library</h3>
-                        </div>
-                        <div class="showcase-card">
-                            <div class="number-badge">5</div>
-                            <img src="/images/screenshot5.jpg" alt="Ready Mode" class="screenshot">
-                            <h3>Instant Copy</h3>
+                        <div class="ad-visual">
+                            <div class="phone-stack">
+                                <img src="/images/screenshot1.jpg" class="phone-img img-1" alt="Prompt Gallery 1">
+                                <img src="/images/screenshot2.jpg" class="phone-img img-2" alt="Prompt Gallery 2">
+                                <img src="/images/screenshot3.jpg" class="phone-img img-3" alt="Prompt Gallery 3">
+                                <img src="/images/screenshot4.jpg" class="phone-img img-4" alt="Prompt Gallery 4">
+                                <img src="/images/screenshot5.jpg" class="phone-img img-5" alt="Prompt Gallery 5">
+                            </div>
                         </div>
                     </div>
                 </section>
 
                 <section class="contact-section">
                     <div class="contact-box">
-                        <h2>Have Questions?</h2>
-                        <br>
+                        <h2>Need Support?</h2>
+                        <p style="margin-bottom: 20px; color: var(--text-muted);">Reach out to us for feature requests or technical help.</p>
                         <a href="mailto:whyxee@gmail.com" class="email-link">whyxee@gmail.com</a>
                     </div>
                 </section>
@@ -386,9 +474,9 @@ app.get('/', (req, res) => {
                 <footer>
                     <div class="footer-links">
                         <a href="/privacy-policy">Privacy Policy</a>
-                        <a href="mailto:whyxee@gmail.com">Support</a>
+                        <a href="mailto:whyxee@gmail.com">Contact Support</a>
                     </div>
-                    <p class="copyright">Copyright © 2025 - 2026 Prompt Gallery. All rights reserved.</p>
+                    <p class="copyright" style="color: var(--text-muted); font-size: 0.9rem;">Copyright © 2025 - 2026 PDFound. Built with privacy in mind.</p>
                 </footer>
             </main>
         </body>
