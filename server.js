@@ -462,9 +462,9 @@ app.get('/', (req, res) => {
                         <div class="ad-visual">
                             <div class="phone-stack">
                                 <img src="/images/screenshot1.jpg" class="phone-img img-1" alt="Prompt Gallery 1">
-                                <img src="/images/screenshot2.jpg" class="phone-img img-2" alt="Prompt Gallery 2">
+                                <img src="/images/screenshot4.jpg" class="phone-img img-2" alt="Prompt Gallery 2">
                                 <img src="/images/screenshot3.jpg" class="phone-img img-3" alt="Prompt Gallery 3">
-                                <img src="/images/screenshot4.jpg" class="phone-img img-4" alt="Prompt Gallery 4">
+                                <img src="/images/screenshot2.jpg" class="phone-img img-4" alt="Prompt Gallery 4">
                                 <img src="/images/screenshot5.jpg" class="phone-img img-5" alt="Prompt Gallery 5">
                             </div>
                         </div>
