@@ -90,7 +90,7 @@ const upload = multer({
     }
 });
 
-// Root endpoint - Welcome message
+// Root endpoint - Welcome page
 app.get('/', (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(`
@@ -99,133 +99,342 @@ app.get('/', (req, res) => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>PDFound - Backend Server</title>
+            <title>PDFound - The Premium PDF Toolkit</title>
+            <!-- Google Font -->
+            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+            <!-- Icons -->
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
             <style>
+                :root {
+                    --primary: #6366f1;
+                    --primary-dark: #4f46e5;
+                    --secondary: #a855f7;
+                    --accent: #f472b6;
+                    --bg: #0f172a;
+                    --card-bg: rgba(30, 41, 59, 0.7);
+                    --text: #f8fafc;
+                    --text-muted: #94a3b8;
+                }
+
                 * {
                     margin: 0;
                     padding: 0;
                     box-sizing: border-box;
                 }
+
                 body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    min-height: 100vh;
+                    font-family: 'Outfit', sans-serif;
+                    background-color: var(--bg);
+                    color: var(--text);
+                    line-height: 1.6;
+                    overflow-x: hidden;
+                }
+
+                .blob {
+                    position: absolute;
+                    width: 500px;
+                    height: 500px;
+                    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+                    filter: blur(80px);
+                    border-radius: 50%;
+                    z-index: -1;
+                    opacity: 0.15;
+                    animation: move 20s infinite alternate;
+                }
+
+                .blob-1 { top: -100px; right: -100px; }
+                .blob-2 { bottom: -100px; left: -100px; animation-delay: -5s; }
+
+                @keyframes move {
+                    from { transform: translate(0, 0) scale(1); }
+                    to { transform: translate(50px, 100px) scale(1.1); }
+                }
+
+                .container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 0 24px;
+                }
+
+                nav {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 40px 0;
+                }
+
+                .logo-container {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .logo-img {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+                }
+
+                .brand-name {
+                    font-size: 1.8rem;
+                    font-weight: 700;
+                    background: linear-gradient(to right, #fff, var(--text-muted));
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+
+                .hero {
+                    text-align: center;
+                    padding: 80px 0 60px;
+                }
+
+                .hero h1 {
+                    font-size: 4.5rem;
+                    font-weight: 800;
+                    margin-bottom: 24px;
+                    letter-spacing: -2px;
+                    line-height: 1.1;
+                    background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+
+                .hero p {
+                    font-size: 1.4rem;
+                    color: var(--text-muted);
+                    max-width: 700px;
+                    margin: 0 auto 40px;
+                }
+
+                .cta-buttons {
+                    display: flex;
+                    gap: 20px;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+
+                .btn {
+                    padding: 16px 32px;
+                    border-radius: 14px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .btn-primary {
+                    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+                    color: white;
+                    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+                }
+
+                .btn-primary:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 15px 40px rgba(99, 102, 241, 0.6);
+                }
+
+                .btn-outline {
+                    background: var(--card-bg);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    color: var(--text);
+                }
+
+                .btn-outline:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                    transform: translateY(-5px);
+                }
+
+                .features {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 24px;
+                    padding: 80px 0;
+                }
+
+                .feature-card {
+                    background: var(--card-bg);
+                    backdrop-filter: blur(12px);
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                    padding: 40px;
+                    border-radius: 24px;
+                    transition: all 0.4s ease;
+                }
+
+                .feature-card:hover {
+                    transform: translateY(-12px);
+                    border-color: var(--primary);
+                    background: rgba(30, 41, 59, 0.9);
+                }
+
+                .icon-box {
+                    width: 60px;
+                    height: 60px;
+                    background: rgba(99, 102, 241, 0.1);
+                    border-radius: 16px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 20px;
+                    margin-bottom: 24px;
+                    color: var(--primary);
+                    font-size: 1.5rem;
                 }
-                .container {
-                    background: white;
-                    border-radius: 20px;
-                    padding: 60px 40px;
-                    max-width: 800px;
-                    width: 100%;
-                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+
+                .feature-card h3 {
+                    font-size: 1.5rem;
+                    margin-bottom: 12px;
+                }
+
+                .feature-card p {
+                    color: var(--text-muted);
+                }
+
+                .contact-section {
+                    text-align: center;
+                    padding: 100px 0;
+                    background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.05));
+                }
+
+                .contact-box {
+                    background: var(--card-bg);
+                    padding: 40px;
+                    border-radius: 30px;
+                    max-width: 600px;
+                    margin: 0 auto;
+                }
+
+                .contact-box h2 {
+                    margin-bottom: 16px;
+                }
+
+                .email-link {
+                    color: var(--primary);
+                    font-size: 1.2rem;
+                    text-decoration: none;
+                    font-weight: 600;
+                }
+
+                footer {
+                    padding: 60px 0 40px;
+                    border-top: 1px solid rgba(255, 255, 255, 0.05);
                     text-align: center;
                 }
-                .logo {
-                    width: 150px;
-                    height: 150px;
-                    margin: 0 auto 30px;
+
+                .footer-links {
+                    margin: 24px 0;
                     display: flex;
-                    align-items: center;
+                    gap: 30px;
                     justify-content: center;
-                    animation: float 3s ease-in-out infinite;
                 }
-                .logo img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: contain;
-                }
-                .logo svg {
-                    width: 100%;
-                    height: 100%;
-                }
-                @keyframes float {
-                    0%, 100% { transform: translateY(0px); }
-                    50% { transform: translateY(-10px); }
-                }
-                h1 {
-                    font-size: 3.5rem;
-                    color: #667eea;
-                    margin-bottom: 30px;
-                    font-weight: 700;
-                    line-height: 1.2;
-                }
-                .message {
-                    font-size: 1.5rem;
-                    color: #333;
-                    margin-bottom: 40px;
-                    line-height: 1.6;
-                }
-                .email {
-                    font-size: 1.3rem;
-                    color: #764ba2;
-                    font-weight: 600;
-                    margin-top: 30px;
-                }
-                .email a {
-                    color: #667eea;
+
+                .footer-links a {
+                    color: var(--text-muted);
                     text-decoration: none;
+                    font-size: 0.9rem;
                     transition: color 0.3s;
                 }
-                .email a:hover {
-                    color: #764ba2;
-                    text-decoration: underline;
+
+                .footer-links a:hover {
+                    color: var(--primary);
                 }
-                @media (max-width: 600px) {
-                    h1 {
-                        font-size: 2.5rem;
-                    }
-                    .message {
-                        font-size: 1.2rem;
-                    }
-                    .email {
-                        font-size: 1.1rem;
-                    }
-                    .container {
-                        padding: 40px 20px;
-                    }
+
+                .copyright {
+                    color: var(--text-muted);
+                    font-size: 0.85rem;
+                }
+
+                @media (max-width: 768px) {
+                    .hero h1 { font-size: 2.8rem; }
+                    .hero p { font-size: 1.1rem; }
+                    .brand-name { font-size: 1.4rem; }
                 }
             </style>
         </head>
         <body>
-            <div class="container">
-                <div class="logo">
-                    <img src="https://raw.githubusercontent.com/kidsviewapp-coder/PDFound-App/main/icon_pdfound.png" 
-                         alt="PDFound Logo" 
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                    <svg width="150" height="150" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg" style="display:none;">
-                        <defs>
-                            <linearGradient id="folderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-                                <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
-                            </linearGradient>
-                        </defs>
-                        <!-- Folder shape -->
-                        <path d="M 30 50 L 30 120 L 120 120 L 120 70 L 70 70 L 60 50 Z" fill="url(#folderGradient)" stroke="#667eea" stroke-width="2"/>
-                        <!-- Folder front flap -->
-                        <path d="M 30 50 L 60 50 L 70 70 L 30 70 Z" fill="url(#folderGradient)" opacity="0.8"/>
-                        <!-- Magnifying glass -->
-                        <circle cx="100" cy="90" r="15" fill="none" stroke="white" stroke-width="3"/>
-                        <line x1="110" y1="100" x2="125" y2="115" stroke="white" stroke-width="3" stroke-linecap="round"/>
-                        <!-- PDF text -->
-                        <text x="75" y="135" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#667eea" text-anchor="middle">PDF</text>
-                    </svg>
-                </div>
-                <h1>Thank You for Using PDFound</h1>
-                <p class="message">
-                    We appreciate your support! If you have any questions, feedback, or inquiries, please don't hesitate to reach out to us.
-                </p>
-                <p class="email">
-                    Email us at: <a href="mailto:whyxee@gmail.com">whyxee@gmail.com</a>
-                </p>
-            </div>
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+
+            <main class="container">
+                <nav>
+                    <div class="logo-container">
+                        <img src="https://raw.githubusercontent.com/kidsviewapp-coder/PDFound-App/main/icon_pdfound.png" alt="Logo" class="logo-img">
+                        <span class="brand-name">PDFound</span>
+                    </div>
+                </nav>
+
+                <section class="hero">
+                    <h1>Handle PDFs <br> with Perfection.</h1>
+                    <p>Experience the most intuitive PDF tool for Android. Convert, merge, split, and compress documents instantly without compromising your privacy.</p>
+                    <div class="cta-buttons">
+                        <a href="https://play.google.com/store/apps/details?id=why.xee.pdfound" class="btn btn-primary">
+                            <i class="fab fa-google-play"></i> Get it on Play Store
+                        </a>
+                        <a href="#features" class="btn btn-outline">Explore Features</a>
+                    </div>
+                </section>
+
+                <section id="features" class="features">
+                    <div class="feature-card">
+                        <div class="icon-box"><i class="fas fa-file-export"></i></div>
+                        <h3>Powerful Conversion</h3>
+                        <p>High-quality conversion between Images, Word, and PDF formats. Fast and reliable results every time.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon-box"><i class="fas fa-object-group"></i></div>
+                        <h3>Merge & Split</h3>
+                        <p>Combine multiple documents into one or extract specific pages from large PDFs with ease.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon-box"><i class="fas fa-compress-arrows-alt"></i></div>
+                        <h3>Smart Compression</h3>
+                        <p>Reduce file sizes dramatically while maintaining crystal-clear quality for perfect sharing.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="icon-box"><i class="fas fa-shield-halved"></i></div>
+                        <h3>Privacy First</h3>
+                        <p>Your documents are processed transientsly and never stored. What happens on PDFound, stays private.</p>
+                    </div>
+                </section>
+
+                <section class="contact-section">
+                    <div class="contact-box">
+                        <h2>Have Questions?</h2>
+                        <p>We're here to help you get the most out of PDFound.</p>
+                        <br>
+                        <a href="mailto:whyxee@gmail.com" class="email-link">whyxee@gmail.com</a>
+                    </div>
+                </section>
+
+                <footer>
+                    <div class="logo-container" style="justify-content: center; margin-bottom: 20px;">
+                        <img src="https://raw.githubusercontent.com/kidsviewapp-coder/PDFound-App/main/icon_pdfound.png" alt="Logo" class="logo-img" style="width: 32px; height: 32px;">
+                        <span class="brand-name" style="font-size: 1.2rem;">PDFound</span>
+                    </div>
+                    <div class="footer-links">
+                        <a href="/privacy-policy">Privacy Policy</a>
+                        <a href="mailto:whyxee@gmail.com">Support</a>
+                    </div>
+                    <p class="copyright">Copyright © 2025 - 2026 PDFound. All rights reserved.</p>
+                </footer>
+            </main>
         </body>
         </html>
     `);
+});
+
+// Privacy Policy endpoint
+app.get('/privacy-policy', async (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'privacy-policy.html');
+        const content = await fs.readFile(filePath, 'utf-8');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(content);
+    } catch (error) {
+        console.error('Privacy Policy error:', error);
+        res.status(500).send('Privacy Policy not found');
+    }
 });
 
 // Health check endpoint
