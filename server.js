@@ -278,7 +278,7 @@ app.get('/', (req, res) => {
                     border: 1px solid var(--border);
                     margin-bottom: 100px;
                     position: relative;
-                    overflow: hidden;
+                    overflow: visible;
                 }
 
                 .ad-content {
