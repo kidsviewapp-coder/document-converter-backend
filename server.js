@@ -330,7 +330,7 @@ app.get('/', (req, res) => {
             <main class="container">
                 <nav>
                     <div class="logo-container">
-                        <img src="/logo.png" alt="Logo" class="logo-img">
+                        <img src="/logo.webp" alt="Logo" class="logo-img">
                         <span class="brand-name">Prompt Gallery</span>
                     </div>
                 </nav>
