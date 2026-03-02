@@ -60,10 +60,12 @@ app.get('/logo.png', async (req, res) => {
 // Create necessary directories
 const UPLOAD_DIR = 'uploads';
 const DOWNLOAD_DIR = 'downloads';
+const PUBLIC_DIR = 'public';
 
 async function ensureDirectories() {
     await fs.mkdir(UPLOAD_DIR, { recursive: true });
     await fs.mkdir(DOWNLOAD_DIR, { recursive: true });
+    await fs.mkdir(PUBLIC_DIR, { recursive: true });
 }
 
 ensureDirectories();
@@ -90,6 +92,9 @@ const upload = multer({
     }
 });
 
+// Serve static files from public directory
+app.use(express.static(PUBLIC_DIR));
+
 // Root endpoint - Welcome page
 app.get('/', (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -99,7 +104,7 @@ app.get('/', (req, res) => {
         <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>PDFound - The Premium PDF Toolkit</title>
+            <title>Prompt Gallery - Unlock Your AI Creativity</title>
             <!-- Google Font -->
             <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
             <!-- Icons -->
@@ -212,6 +217,7 @@ app.get('/', (req, res) => {
                     gap: 20px;
                     justify-content: center;
                     flex-wrap: wrap;
+                    margin-bottom: 60px;
                 }
 
                 .btn {
@@ -236,65 +242,61 @@ app.get('/', (req, res) => {
                     box-shadow: 0 15px 40px rgba(99, 102, 241, 0.6);
                 }
 
-                .btn-outline {
-                    background: var(--card-bg);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    color: var(--text);
-                }
-
-                .btn-outline:hover {
-                    background: rgba(255, 255, 255, 0.1);
-                    transform: translateY(-5px);
-                }
-
-                .features {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                    gap: 24px;
+                /* App Showcase Section */
+                .showcase {
                     padding: 80px 0;
                 }
 
-                .feature-card {
+                .showcase-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 30px;
+                    margin-top: 50px;
+                }
+
+                .showcase-card {
+                    text-align: center;
                     background: var(--card-bg);
-                    backdrop-filter: blur(12px);
+                    border-radius: 20px;
+                    padding: 20px;
                     border: 1px solid rgba(255, 255, 255, 0.05);
-                    padding: 40px;
-                    border-radius: 24px;
-                    transition: all 0.4s ease;
+                    transition: all 0.3s ease;
                 }
 
-                .feature-card:hover {
-                    transform: translateY(-12px);
+                .showcase-card:hover {
+                    transform: translateY(-10px);
                     border-color: var(--primary);
-                    background: rgba(30, 41, 59, 0.9);
                 }
 
-                .icon-box {
-                    width: 60px;
-                    height: 60px;
-                    background: rgba(99, 102, 241, 0.1);
-                    border-radius: 16px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin-bottom: 24px;
-                    color: var(--primary);
-                    font-size: 1.5rem;
+                .screenshot {
+                    width: 100%;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                    margin-bottom: 20px;
                 }
 
-                .feature-card h3 {
-                    font-size: 1.5rem;
-                    margin-bottom: 12px;
+                .number-badge {
+                    display: inline-block;
+                    width: 36px;
+                    height: 36px;
+                    background: var(--primary);
+                    color: white;
+                    border-radius: 50%;
+                    line-height: 36px;
+                    font-weight: 800;
+                    margin-bottom: 15px;
+                    font-size: 1.2rem;
                 }
 
-                .feature-card p {
-                    color: var(--text-muted);
+                .showcase-card h3 {
+                    font-size: 1.1rem;
+                    margin-bottom: 10px;
+                    color: #fff;
                 }
 
                 .contact-section {
                     text-align: center;
                     padding: 100px 0;
-                    background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.05));
                 }
 
                 .contact-box {
@@ -303,10 +305,6 @@ app.get('/', (req, res) => {
                     border-radius: 30px;
                     max-width: 600px;
                     margin: 0 auto;
-                }
-
-                .contact-box h2 {
-                    margin-bottom: 16px;
                 }
 
                 .email-link {
@@ -333,22 +331,11 @@ app.get('/', (req, res) => {
                     color: var(--text-muted);
                     text-decoration: none;
                     font-size: 0.9rem;
-                    transition: color 0.3s;
-                }
-
-                .footer-links a:hover {
-                    color: var(--primary);
-                }
-
-                .copyright {
-                    color: var(--text-muted);
-                    font-size: 0.85rem;
                 }
 
                 @media (max-width: 768px) {
                     .hero h1 { font-size: 2.8rem; }
-                    .hero p { font-size: 1.1rem; }
-                    .brand-name { font-size: 1.4rem; }
+                    .showcase-grid { grid-template-columns: 1fr; }
                 }
             </style>
         </head>
@@ -359,64 +346,65 @@ app.get('/', (req, res) => {
             <main class="container">
                 <nav>
                     <div class="logo-container">
-                        <img src="https://raw.githubusercontent.com/kidsviewapp-coder/PDFound-App/main/icon_pdfound.png" alt="Logo" class="logo-img">
-                        <span class="brand-name">PDFound</span>
+                        <img src="/logo.png" alt="Logo" class="logo-img">
+                        <span class="brand-name">Prompt Gallery</span>
                     </div>
                 </nav>
 
                 <section class="hero">
-                    <h1>Handle PDFs <br> with Perfection.</h1>
-                    <p>Experience the most intuitive PDF tool for Android. Convert, merge, split, and compress documents instantly without compromising your privacy.</p>
+                    <h1>Unlock Your AI <br> Creativity instantly.</h1>
+                    <p>Discover, select, and create with the world's most powerful AI prompt library. Curated for creators, developers, and visionaries.</p>
                     <div class="cta-buttons">
                         <a href="https://play.google.com/store/apps/details?id=why.xee.pdfound" class="btn btn-primary">
-                            <i class="fab fa-google-play"></i> Get it on Play Store
+                            <i class="fab fa-google-play"></i> Get on Play Store
                         </a>
-                        <a href="#features" class="btn btn-outline">Explore Features</a>
                     </div>
                 </section>
 
-                <section id="features" class="features">
-                    <div class="feature-card">
-                        <div class="icon-box"><i class="fas fa-file-export"></i></div>
-                        <h3>Powerful Conversion</h3>
-                        <p>High-quality conversion between Images, Word, and PDF formats. Fast and reliable results every time.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon-box"><i class="fas fa-object-group"></i></div>
-                        <h3>Merge & Split</h3>
-                        <p>Combine multiple documents into one or extract specific pages from large PDFs with ease.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon-box"><i class="fas fa-compress-arrows-alt"></i></div>
-                        <h3>Smart Compression</h3>
-                        <p>Reduce file sizes dramatically while maintaining crystal-clear quality for perfect sharing.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="icon-box"><i class="fas fa-shield-halved"></i></div>
-                        <h3>Privacy First</h3>
-                        <p>Your documents are processed transientsly and never stored. What happens on PDFound, stays private.</p>
+                <section class="showcase">
+                    <div class="showcase-grid">
+                        <div class="showcase-card">
+                            <div class="number-badge">1</div>
+                            <img src="/images/screenshot1.jpg" alt="Unlock Creativity" class="screenshot">
+                            <h3>Unlock Creativity</h3>
+                        </div>
+                        <div class="showcase-card">
+                            <div class="number-badge">2</div>
+                            <img src="/images/screenshot2.jpg" alt="Discover Art" class="screenshot">
+                            <h3>Trending Prompts</h3>
+                        </div>
+                        <div class="showcase-card">
+                            <div class="number-badge">3</div>
+                            <img src="/images/screenshot3.jpg" alt="Browse & Pick" class="screenshot">
+                            <h3>Browse & Pick</h3>
+                        </div>
+                        <div class="showcase-card">
+                            <div class="number-badge">4</div>
+                            <img src="/images/screenshot4.jpg" alt="AI Library" class="screenshot">
+                            <h3>Exclusive Library</h3>
+                        </div>
+                        <div class="showcase-card">
+                            <div class="number-badge">5</div>
+                            <img src="/images/screenshot5.jpg" alt="Ready Mode" class="screenshot">
+                            <h3>Instant Copy</h3>
+                        </div>
                     </div>
                 </section>
 
                 <section class="contact-section">
                     <div class="contact-box">
                         <h2>Have Questions?</h2>
-                        <p>We're here to help you get the most out of PDFound.</p>
                         <br>
                         <a href="mailto:whyxee@gmail.com" class="email-link">whyxee@gmail.com</a>
                     </div>
                 </section>
 
                 <footer>
-                    <div class="logo-container" style="justify-content: center; margin-bottom: 20px;">
-                        <img src="https://raw.githubusercontent.com/kidsviewapp-coder/PDFound-App/main/icon_pdfound.png" alt="Logo" class="logo-img" style="width: 32px; height: 32px;">
-                        <span class="brand-name" style="font-size: 1.2rem;">PDFound</span>
-                    </div>
                     <div class="footer-links">
                         <a href="/privacy-policy">Privacy Policy</a>
                         <a href="mailto:whyxee@gmail.com">Support</a>
                     </div>
-                    <p class="copyright">Copyright © 2025 - 2026 PDFound. All rights reserved.</p>
+                    <p class="copyright">Copyright © 2025 - 2026 Prompt Gallery. All rights reserved.</p>
                 </footer>
             </main>
         </body>
