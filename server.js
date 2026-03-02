@@ -346,17 +346,17 @@ app.get('/', (req, res) => {
 
                 /* Spread out on container hover */
                 .phone-stack:hover .img-1 { transform: translateX(-50%) translateY(-20px) scale(1.05); }
-                .phone-stack:hover .img-2 { left: -50%; transform: rotate(-10deg) scale(0.95); opacity: 1; }
-                .phone-stack:hover .img-3 { right: -50%; transform: rotate(10deg) scale(0.95); opacity: 1; }
-                .phone-stack:hover .img-4 { left: -100%; bottom: 20px; transform: rotate(-15deg) scale(0.9); opacity: 1; }
-                .phone-stack:hover .img-5 { right: -100%; bottom: 20px; transform: rotate(15deg) scale(0.9); opacity: 1; }
+                .phone-stack:hover .img-2 { left: -15%; transform: rotate(-10deg) scale(0.95); opacity: 1; }
+                .phone-stack:hover .img-3 { right: -15%; transform: rotate(10deg) scale(0.95); opacity: 1; }
+                .phone-stack:hover .img-4 { left: -35%; bottom: 20px; transform: rotate(-15deg) scale(0.9); opacity: 1; }
+                .phone-stack:hover .img-5 { right: -35%; bottom: 20px; transform: rotate(15deg) scale(0.9); opacity: 1; }
 
-                /* Bring individual hovered image to front and enlarge it hugely */
-                .phone-stack .img-1:hover { z-index: 10; transform: translateX(-50%) translateY(-60px) scale(1.5) rotate(0deg); }
-                .phone-stack .img-2:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-40px); left: -20%; }
-                .phone-stack .img-3:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-40px); right: -20%; }
-                .phone-stack .img-4:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-40px); left: -50%; }
-                .phone-stack .img-5:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-40px); right: -50%; }
+                /* Bring individual hovered image to front and enlarge it */
+                .phone-stack .img-1:hover { z-index: 10; transform: translateX(-50%) translateY(-50px) scale(1.35) rotate(0deg); }
+                .phone-stack .img-2:hover { z-index: 10; transform: rotate(0deg) scale(1.35) translateY(-30px); left: 0%; }
+                .phone-stack .img-3:hover { z-index: 10; transform: rotate(0deg) scale(1.35) translateY(-30px); right: 0%; }
+                .phone-stack .img-4:hover { z-index: 10; transform: rotate(0deg) scale(1.35) translateY(-30px); left: -15%; }
+                .phone-stack .img-5:hover { z-index: 10; transform: rotate(0deg) scale(1.35) translateY(-30px); right: -15%; }
 
 
                 .contact-section {
