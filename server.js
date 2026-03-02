@@ -39,23 +39,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Serve logo image
-app.get('/logo.png', async (req, res) => {
-    try {
-        const logoPath = path.join(__dirname, 'logo.png');
-        try {
-            await fs.access(logoPath);
-            res.setHeader('Content-Type', 'image/png');
-            res.sendFile(logoPath);
-        } catch {
-            // If logo doesn't exist, return 404
-            res.status(404).send('Logo not found');
-        }
-    } catch (error) {
-        console.error('Logo error:', error);
-        res.status(500).send('Error serving logo');
-    }
-});
+
 
 // Create necessary directories
 const UPLOAD_DIR = 'uploads';
