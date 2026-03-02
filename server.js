@@ -89,6 +89,7 @@ app.get('/', (req, res) => {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>PDFound - The Premium PDF Toolkit</title>
+            <link rel="icon" type="image/webp" href="/logo.webp">
             <!-- Google Font -->
             <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
             <!-- Icons -->
@@ -332,23 +333,30 @@ app.get('/', (req, res) => {
                     border-radius: 20px;
                     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
                     border: 4px solid #1e293b;
-                    transition: all 0.5s ease;
+                    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    cursor: pointer;
                 }
 
                 /* Staggered dynamic layout */
                 .img-1 { z-index: 5; top: 0; left: 50%; transform: translateX(-50%) rotate(0deg); width: 220px; }
                 .img-2 { z-index: 4; top: 40px; left: 10%; transform: rotate(-10deg) scale(0.9); }
                 .img-3 { z-index: 4; top: 40px; right: 10%; transform: rotate(10deg) scale(0.9); }
-                .img-4 { z-index: 3; bottom: -20px; left: 20%; transform: rotate(-5deg) scale(0.85); opacity: 0.7; }
-                .img-5 { z-index: 3; bottom: -20px; right: 20%; transform: rotate(5deg) scale(0.85); opacity: 0.7; }
+                .img-4 { z-index: 3; bottom: -20px; left: 20%; transform: rotate(-15deg) scale(0.85); opacity: 0.7; }
+                .img-5 { z-index: 3; bottom: -20px; right: 20%; transform: rotate(15deg) scale(0.85); opacity: 0.7; }
 
-                .phone-stack:hover .phone-img {
-                    transform: scale(1.05) rotate(0deg);
-                    opacity: 1;
-                }
+                /* Spread out on container hover */
+                .phone-stack:hover .img-1 { transform: translateX(-50%) translateY(-20px) scale(1.05); }
+                .phone-stack:hover .img-2 { left: -20%; transform: rotate(-15deg) scale(0.95); opacity: 1; }
+                .phone-stack:hover .img-3 { right: -20%; transform: rotate(15deg) scale(0.95); opacity: 1; }
+                .phone-stack:hover .img-4 { left: -50%; bottom: 0; transform: rotate(-25deg) scale(0.9); opacity: 1; }
+                .phone-stack:hover .img-5 { right: -50%; bottom: 0; transform: rotate(25deg) scale(0.9); opacity: 1; }
 
-                .phone-stack:hover .img-2 { left: -5%; }
-                .phone-stack:hover .img-3 { right: -5%; }
+                /* Bring individual hovered image to front and enlarge it */
+                .phone-stack .img-1:hover { z-index: 10; transform: translateX(-50%) translateY(-40px) scale(1.2) rotate(0deg); }
+                .phone-stack .img-2:hover { z-index: 10; transform: rotate(0deg) scale(1.2) translateY(-20px); }
+                .phone-stack .img-3:hover { z-index: 10; transform: rotate(0deg) scale(1.2) translateY(-20px); }
+                .phone-stack .img-4:hover { z-index: 10; transform: rotate(0deg) scale(1.2) translateY(-20px); }
+                .phone-stack .img-5:hover { z-index: 10; transform: rotate(0deg) scale(1.2) translateY(-20px); }
 
 
                 .contact-section {
