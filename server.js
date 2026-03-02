@@ -89,7 +89,7 @@ app.get('/', (req, res) => {
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>PDFound - The Premium PDF Toolkit</title>
-            <link rel="icon" type="image/webp" href="/logo.webp">
+            <link rel="icon" type="image/png" href="/logo.png">
             <!-- Google Font -->
             <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
             <!-- Icons -->
@@ -346,17 +346,17 @@ app.get('/', (req, res) => {
 
                 /* Spread out on container hover */
                 .phone-stack:hover .img-1 { transform: translateX(-50%) translateY(-20px) scale(1.05); }
-                .phone-stack:hover .img-2 { left: -20%; transform: rotate(-15deg) scale(0.95); opacity: 1; }
-                .phone-stack:hover .img-3 { right: -20%; transform: rotate(15deg) scale(0.95); opacity: 1; }
-                .phone-stack:hover .img-4 { left: -50%; bottom: 0; transform: rotate(-25deg) scale(0.9); opacity: 1; }
-                .phone-stack:hover .img-5 { right: -50%; bottom: 0; transform: rotate(25deg) scale(0.9); opacity: 1; }
+                .phone-stack:hover .img-2 { left: -50%; transform: rotate(-10deg) scale(0.95); opacity: 1; }
+                .phone-stack:hover .img-3 { right: -50%; transform: rotate(10deg) scale(0.95); opacity: 1; }
+                .phone-stack:hover .img-4 { left: -100%; bottom: 20px; transform: rotate(-15deg) scale(0.9); opacity: 1; }
+                .phone-stack:hover .img-5 { right: -100%; bottom: 20px; transform: rotate(15deg) scale(0.9); opacity: 1; }
 
-                /* Bring individual hovered image to front and enlarge it */
-                .phone-stack .img-1:hover { z-index: 10; transform: translateX(-50%) translateY(-40px) scale(1.2) rotate(0deg); }
-                .phone-stack .img-2:hover { z-index: 10; transform: rotate(0deg) scale(1.2) translateY(-20px); }
-                .phone-stack .img-3:hover { z-index: 10; transform: rotate(0deg) scale(1.2) translateY(-20px); }
-                .phone-stack .img-4:hover { z-index: 10; transform: rotate(0deg) scale(1.2) translateY(-20px); }
-                .phone-stack .img-5:hover { z-index: 10; transform: rotate(0deg) scale(1.2) translateY(-20px); }
+                /* Bring individual hovered image to front and enlarge it hugely */
+                .phone-stack .img-1:hover { z-index: 10; transform: translateX(-50%) translateY(-60px) scale(1.5) rotate(0deg); }
+                .phone-stack .img-2:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-40px); left: -20%; }
+                .phone-stack .img-3:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-40px); right: -20%; }
+                .phone-stack .img-4:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-40px); left: -50%; }
+                .phone-stack .img-5:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-40px); right: -50%; }
 
 
                 .contact-section {
@@ -414,7 +414,7 @@ app.get('/', (req, res) => {
             <main class="container">
                 <nav>
                     <div class="logo-container">
-                        <img src="/logo.webp" alt="Logo" class="logo-img">
+                        <img src="/logo.png" alt="Logo" class="logo-img">
                         <span class="brand-name">PDFound</span>
                     </div>
                 </nav>
