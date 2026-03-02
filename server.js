@@ -337,26 +337,26 @@ app.get('/', (req, res) => {
                     cursor: pointer;
                 }
 
-                /* Staggered dynamic layout */
-                .img-1 { z-index: 5; top: 0; left: 50%; transform: translateX(-50%) rotate(0deg); width: 220px; }
-                .img-2 { z-index: 4; top: 40px; left: 10%; transform: rotate(-10deg) scale(0.9); }
-                .img-3 { z-index: 4; top: 40px; right: 10%; transform: rotate(10deg) scale(0.9); }
-                .img-4 { z-index: 3; bottom: -20px; left: 20%; transform: rotate(-15deg) scale(0.85); opacity: 0.7; }
-                .img-5 { z-index: 3; bottom: -20px; right: 20%; transform: rotate(15deg) scale(0.85); opacity: 0.7; }
+                /* Staggered dynamic layout (Left to Right) */
+                .pos-1 { z-index: 3; bottom: -10px; left: 5%; transform: rotate(-15deg) scale(0.85); opacity: 0.7; }
+                .pos-2 { z-index: 4; top: 40px; left: 20%; transform: rotate(-8deg) scale(0.9); }
+                .pos-3 { z-index: 5; top: 0; left: 50%; transform: translateX(-50%) rotate(0deg); width: 220px; }
+                .pos-4 { z-index: 4; top: 40px; right: 20%; transform: rotate(8deg) scale(0.9); }
+                .pos-5 { z-index: 3; bottom: -10px; right: 5%; transform: rotate(15deg) scale(0.85); opacity: 0.7; }
 
                 /* Spread out on container hover */
-                .phone-stack:hover .img-1 { transform: translateX(-50%) translateY(-20px) scale(1.05); }
-                .phone-stack:hover .img-2 { left: -15%; transform: rotate(-10deg) scale(0.95); opacity: 1; }
-                .phone-stack:hover .img-3 { right: -15%; transform: rotate(10deg) scale(0.95); opacity: 1; }
-                .phone-stack:hover .img-4 { left: -35%; bottom: 20px; transform: rotate(-15deg) scale(0.9); opacity: 1; }
-                .phone-stack:hover .img-5 { right: -35%; bottom: 20px; transform: rotate(15deg) scale(0.9); opacity: 1; }
+                .phone-stack:hover .pos-1 { left: -15%; transform: rotate(-15deg) scale(0.9); opacity: 1; }
+                .phone-stack:hover .pos-2 { left: 5%; transform: rotate(-8deg) scale(0.95); opacity: 1; }
+                .phone-stack:hover .pos-3 { transform: translateX(-50%) translateY(-20px) scale(1.05); }
+                .phone-stack:hover .pos-4 { right: 5%; transform: rotate(8deg) scale(0.95); opacity: 1; }
+                .phone-stack:hover .pos-5 { right: -15%; transform: rotate(15deg) scale(0.9); opacity: 1; }
 
                 /* Bring individual hovered image to front and enlarge it */
-                .phone-stack .img-1:hover { z-index: 10; transform: translateX(-50%) translateY(-50px) scale(1.5) rotate(0deg); }
-                .phone-stack .img-2:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-30px); left: 0%; }
-                .phone-stack .img-3:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-30px); right: 0%; }
-                .phone-stack .img-4:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-30px); left: -15%; }
-                .phone-stack .img-5:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-30px); right: -15%; }
+                .phone-stack .pos-1:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-30px); left: 0%; opacity: 1; }
+                .phone-stack .pos-2:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-30px); left: 15%; opacity: 1; }
+                .phone-stack .pos-3:hover { z-index: 10; transform: translateX(-50%) translateY(-50px) scale(1.5) rotate(0deg); opacity: 1; }
+                .phone-stack .pos-4:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-30px); right: 15%; opacity: 1; }
+                .phone-stack .pos-5:hover { z-index: 10; transform: rotate(0deg) scale(1.5) translateY(-30px); right: 0%; opacity: 1; }
 
 
                 .contact-section {
@@ -461,11 +461,11 @@ app.get('/', (req, res) => {
                         </div>
                         <div class="ad-visual">
                             <div class="phone-stack">
-                                <img src="/images/screenshot1.jpg" class="phone-img img-1" alt="Prompt Gallery 1">
-                                <img src="/images/screenshot4.jpg" class="phone-img img-2" alt="Prompt Gallery 2">
-                                <img src="/images/screenshot3.jpg" class="phone-img img-3" alt="Prompt Gallery 3">
-                                <img src="/images/screenshot2.jpg" class="phone-img img-4" alt="Prompt Gallery 4">
-                                <img src="/images/screenshot5.jpg" class="phone-img img-5" alt="Prompt Gallery 5">
+                                <img src="/images/screenshot1.jpg" class="phone-img pos-1" alt="Prompt Gallery 1">
+                                <img src="/images/screenshot4.jpg" class="phone-img pos-2" alt="Prompt Gallery 4">
+                                <img src="/images/screenshot3.jpg" class="phone-img pos-3" alt="Prompt Gallery 3">
+                                <img src="/images/screenshot2.jpg" class="phone-img pos-4" alt="Prompt Gallery 2">
+                                <img src="/images/screenshot5.jpg" class="phone-img pos-5" alt="Prompt Gallery 5">
                             </div>
                         </div>
                     </div>
